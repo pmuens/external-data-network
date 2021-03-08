@@ -1,5 +1,7 @@
+const { log } = console
+
 function main() {
-  console.log('Hello World!')
+  log('Hello World!')
 }
 
 main()
