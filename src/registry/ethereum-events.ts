@@ -27,7 +27,7 @@ export class EthereumEvents {
         address,
         event: event!,
         signature: item.eventSignature!,
-        arguments: item.args as string[]
+        arguments: item.args!.map((arg) => arg.toString())
       }
       return result
     })
