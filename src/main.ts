@@ -1,12 +1,23 @@
+import dotenv from 'dotenv'
+
+import { EthereumEvents } from './registry/ethereum-events'
+
+dotenv.config()
 const { log } = console
 
-export function sum(a: number, b: number): number {
-  return a + b
-}
+const { ETHEREUM_URL, ETHEREUM_PORT, ETHEREUM_TEST_ADDRESS, ETHEREUM_TEST_EVENT } = process.env
 
-function main() {
-  const result = sum(2, 4)
-  log(`2 + 4 = ${result}`)
+async function main() {
+  const url = `${ETHEREUM_URL}:${ETHEREUM_PORT}`
+  const address = ETHEREUM_TEST_ADDRESS as string
+  const event = ETHEREUM_TEST_EVENT as string
+
+  const ethereum = new EthereumEvents(url)
+
+  const options = { fromBlock: 0, toBlock: 'latest' }
+  const result = await ethereum.fetch(address, event, options)
+
+  log(result)
 }
 
 main()
