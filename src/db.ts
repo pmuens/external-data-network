@@ -1,5 +1,7 @@
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
+import { Klass, Types, toSnakeCase } from './shared'
+
 export class DB {
   private _db: BetterSqlite3
 
@@ -7,12 +9,12 @@ export class DB {
     this._db = new Database(filePath)
   }
 
-  setup<A extends Klass>(klass: A): void {
+  setup(klass: Klass): void {
     this.ensureTable(klass)
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  insert<A extends Klass, B>(klass: A, data: B[]): number {
+  insert<B>(klass: Klass, data: B[]): number {
     const name = getTableName(klass)
     const mappings = getColumnMappings(klass.types)
 
@@ -36,7 +38,7 @@ export class DB {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  find<A extends Klass>(klass: A, filters: Filters): any[] {
+  find(klass: Klass, filters: Filters): any[] {
     const name = getTableName(klass)
 
     let SQL = 'WHERE '
@@ -53,7 +55,7 @@ export class DB {
     return parseObjects(result)
   }
 
-  private ensureTable<A extends Klass>(klass: A) {
+  private ensureTable(klass: Klass) {
     const name = getTableName(klass)
     const mappings = getColumnMappings(klass.types)
 
@@ -79,7 +81,7 @@ export class DB {
   }
 }
 
-function getTableName<A extends Klass>(klass: A): string {
+function getTableName(klass: Klass): string {
   return toSnakeCase(klass.name)
 }
 
@@ -145,13 +147,6 @@ function parseObjects<T>(data: T[]): T[] {
   return data
 }
 
-function toSnakeCase(str: string): string {
-  return (
-    str[0].toLowerCase() +
-    str.slice(1, str.length).replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-  )
-}
-
 // TODO: Make indexing explicit
 type ColumnMapping = {
   key: string
@@ -162,10 +157,3 @@ type ColumnMapping = {
 
 // TODO: Enforce non-empty Filters via type system
 type Filters = { [key: string]: string | number }
-
-type Types = { [key: string]: string }
-
-type Klass = {
-  name: string
-  types: Types
-}
