@@ -5,6 +5,14 @@ import { ethers } from 'ethers'
 export class EthereumEvents {
   private _url: string
 
+  // NOTE: Keep in sync with types of returned items
+  static types = {
+    address: 'string',
+    event: 'string',
+    signature: 'string',
+    arguments: 'string[]'
+  }
+
   constructor(url: string) {
     this._url = url
   }

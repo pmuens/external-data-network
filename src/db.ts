@@ -7,12 +7,14 @@ export class DB {
     this._db = new Database(filePath)
   }
 
+  setup<A extends Klass>(klass: A): void {
+    this.ensureTable(klass)
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   insert<A extends Klass, B>(klass: A, data: B[]): number {
-    this.ensureTable(klass, data)
-
     const name = getTableName(klass)
-    const mappings = getColumnMappings(data)
+    const mappings = getColumnMappings(klass.types)
 
     const columnNames = mappings.map((item) => item.columnName).join(',')
     const placeholders = mappings.map(() => '?').join(',')
@@ -51,9 +53,9 @@ export class DB {
     return parseObjects(result)
   }
 
-  private ensureTable<A extends Klass, B>(klass: A, data: B[]) {
+  private ensureTable<A extends Klass>(klass: A) {
     const name = getTableName(klass)
-    const mappings = getColumnMappings(data)
+    const mappings = getColumnMappings(klass.types)
 
     const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS ${name} (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,26 +87,25 @@ function getColumnName(key: string): string {
   return toSnakeCase(key)
 }
 
-function getColumnMappings<T>(data: T[]): ColumnMapping[] {
-  const item = data[0]
+function getColumnMappings(types: Types): ColumnMapping[] {
   const result: ColumnMapping[] = []
-  for (const [key, value] of Object.entries(item)) {
+  for (const [key, value] of Object.entries(types)) {
     const columnName = getColumnName(key)
-    if (typeof value === 'string') {
+    if (value === 'string') {
       result.push({
         key,
         columnName,
         columnSql: 'VARCHAR(255) NOT NULL',
         isIndexed: true
       })
-    } else if (typeof value === 'number') {
+    } else if (value === 'number') {
       result.push({
         key,
         columnName,
         columnSql: 'INTEGER NOT NULL',
         isIndexed: false
       })
-    } else if (typeof value === 'object') {
+    } else if (value === 'object' || value.includes('[]')) {
       result.push({
         key,
         columnName,
@@ -162,6 +163,9 @@ type ColumnMapping = {
 // TODO: Enforce non-empty Filters via type system
 type Filters = { [key: string]: string | number }
 
+type Types = { [key: string]: string }
+
 type Klass = {
   name: string
+  types: Types
 }

@@ -27,6 +27,7 @@ async function main() {
 
   const data = await ethereum.fetch(address, event, { fromBlock: 0, toBlock: 'latest' })
 
+  db.setup(EthereumEvents)
   db.insert(EthereumEvents, data)
   const result = db.find(EthereumEvents, { address, id: 1 })
 
