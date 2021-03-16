@@ -9,7 +9,7 @@ export class DB {
     this._db = new Database(filePath)
   }
 
-  setup(klass: Klass): void {
+  add(klass: Klass): void {
     this.ensureTable(klass)
   }
 

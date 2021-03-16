@@ -34,7 +34,7 @@ async function main() {
 
   // DB
   const db = new DB(dbFilePath)
-  db.setup(EthereumEvents)
+  db.add(EthereumEvents)
   db.insert(EthereumEvents, data)
 
   // Server
