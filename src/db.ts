@@ -22,8 +22,10 @@ export class DB {
 
     let inserted = 0
     this._db.transaction((data: B[]) => {
+      data = stringifyObjects(data)
       for (const item of data) {
-        const { changes } = INSERT_SQL.run(stringifyObjects(item))
+        const values = Object.values(item)
+        const { changes } = INSERT_SQL.run(values)
         if (changes > 0) inserted++
       }
     })(data)
@@ -45,7 +47,8 @@ export class DB {
     SQL += clauses.join(' AND ')
 
     const SELECT_SQL = this._db.prepare(`SELECT * FROM ${name} ${SQL};`)
-    return SELECT_SQL.all(values)
+    const result = SELECT_SQL.all(values)
+    return parseObjects(result)
   }
 
   private ensureTable<A extends Klass, B>(klass: A, data: B[]) {
@@ -113,13 +116,32 @@ function getColumnMappings<T>(data: T[]): ColumnMapping[] {
   return result
 }
 
-function stringifyObjects<T>(data: T) {
-  return Object.values(data).map((item) => {
-    if (typeof item === 'object') {
-      item = JSON.stringify(item)
+function stringifyObjects<T>(data: T[]): T[] {
+  for (const item of data) {
+    for (const [key, value] of Object.entries(item)) {
+      let processedValue = value
+      if (typeof value === 'object') {
+        processedValue = JSON.stringify(value)
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(item as { [key: string]: any })[key] = processedValue
     }
-    return item
-  })
+  }
+  return data
+}
+
+function parseObjects<T>(data: T[]): T[] {
+  for (const item of data) {
+    for (const [key, value] of Object.entries(item)) {
+      let processedValue = value
+      if (typeof value === 'string' && (value[0] === '{' || value[0] === '[')) {
+        processedValue = JSON.parse(value)
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(item as { [key: string]: any })[key] = processedValue
+    }
+  }
+  return data
 }
 
 function toSnakeCase(str: string): string {
