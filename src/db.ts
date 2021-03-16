@@ -107,7 +107,14 @@ function getColumnMappings(types: Types): ColumnMapping[] {
         columnSql: 'INTEGER NOT NULL',
         isIndexed: false
       })
-    } else if (value === 'object' || value.includes('[]')) {
+    } else if (value === 'boolean') {
+      result.push({
+        key,
+        columnName,
+        columnSql: 'BOOLEAN NOT NULL',
+        isIndexed: false
+      })
+    } else if (value.includes('[]')) {
       result.push({
         key,
         columnName,
