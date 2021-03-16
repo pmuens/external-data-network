@@ -1,11 +1,16 @@
+import dotenv from 'dotenv'
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { Klass, Types, toSnakeCase } from './shared'
 
+dotenv.config()
+
+const { DB_FILE_PATH } = process.env
+
 export class DB {
   private _db: BetterSqlite3
 
-  constructor(filePath: string) {
+  constructor(filePath: string = DB_FILE_PATH as string) {
     this._db = new Database(filePath)
   }
 
@@ -80,6 +85,9 @@ export class DB {
     })()
   }
 }
+
+// TODO: Enforce non-empty Filters via type system
+export type Filters = { [key: string]: string | number }
 
 function getTableName(klass: Klass): string {
   return toSnakeCase(klass.name)
@@ -161,6 +169,3 @@ type ColumnMapping = {
   columnSql: string
   isIndexed: boolean
 }
-
-// TODO: Enforce non-empty Filters via type system
-type Filters = { [key: string]: string | number }

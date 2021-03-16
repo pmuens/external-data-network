@@ -1,43 +1,36 @@
-import { join } from 'path'
 import dotenv from 'dotenv'
 
 import { DB } from './db'
 import { Server } from './server'
 import { GraphQL } from './graphql'
 import { Scheduler } from './scheduler'
-import { EthereumEvents } from './registry/ethereum-events'
+import { EthereumEvents, CryptoCobras } from './registry'
 
 dotenv.config()
 
-const {
-  DB_FILE_PATH,
-  DB_FILE_NAME,
-  ETHEREUM_URL,
-  ETHEREUM_PORT,
-  ETHEREUM_TEST_ADDRESS,
-  ETHEREUM_TEST_EVENT,
-  SERVER_PORT
-} = process.env
+const { ETHEREUM_URL, ETHEREUM_PORT, CRYPTO_COBRAS_ADDRESS, SERVER_PORT } = process.env
 
 const { log } = console
 
 async function main() {
   const ethereumNodeUrl = `${ETHEREUM_URL}:${ETHEREUM_PORT}`
-  const ethereumAddress = ETHEREUM_TEST_ADDRESS as string
-  const ethereumEvent = ETHEREUM_TEST_EVENT as string
-  const dbFilePath = join(DB_FILE_PATH as string, DB_FILE_NAME as string)
   const serverPort = parseInt(SERVER_PORT as string)
 
   // EthereumEvents
   const ethereum = new EthereumEvents(ethereumNodeUrl)
 
+  // CryptoCobras
+  const address = CRYPTO_COBRAS_ADDRESS as string
+  const event = 'event Birth(address,uint256,uint256,uint256,uint8,uint8)'
+  const cobras = new CryptoCobras(address)
+
   // DB
-  const db = new DB(dbFilePath)
+  const db = new DB()
   db.add(EthereumEvents)
 
   async function reindex() {
     log('Fetching new data...')
-    const data = await ethereum.fetch(ethereumAddress, ethereumEvent, {
+    const data = await ethereum.fetch(address, event, {
       fromBlock: 0,
       toBlock: 'latest'
     })
@@ -51,6 +44,7 @@ async function main() {
   // GraphQL
   const graphql = new GraphQL(server, db)
   graphql.add(EthereumEvents)
+  graphql.add(cobras)
   graphql.setup()
 
   // Scheduler
