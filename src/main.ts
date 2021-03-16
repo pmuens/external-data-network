@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import { DB } from './db'
 import { Server } from './server'
 import { GraphQL } from './graphql'
+import { Scheduler } from './scheduler'
 import { EthereumEvents } from './registry/ethereum-events'
 
 dotenv.config()
@@ -18,6 +19,8 @@ const {
   SERVER_PORT
 } = process.env
 
+const { log } = console
+
 async function main() {
   const ethereumNodeUrl = `${ETHEREUM_URL}:${ETHEREUM_PORT}`
   const ethereumAddress = ETHEREUM_TEST_ADDRESS as string
@@ -27,15 +30,20 @@ async function main() {
 
   // EthereumEvents
   const ethereum = new EthereumEvents(ethereumNodeUrl)
-  const data = await ethereum.fetch(ethereumAddress, ethereumEvent, {
-    fromBlock: 0,
-    toBlock: 'latest'
-  })
 
   // DB
   const db = new DB(dbFilePath)
   db.add(EthereumEvents)
-  db.insert(EthereumEvents, data)
+
+  async function reindex() {
+    log('Fetching new data...')
+    const data = await ethereum.fetch(ethereumAddress, ethereumEvent, {
+      fromBlock: 0,
+      toBlock: 'latest'
+    })
+    const num = db.insert(EthereumEvents, data)
+    log(`Indexed ${num} new entries...`)
+  }
 
   // Server
   const server = new Server(serverPort)
@@ -45,6 +53,11 @@ async function main() {
   graphql.add(EthereumEvents)
   graphql.setup()
 
+  // Scheduler
+  const scheduler = new Scheduler()
+  scheduler.add(reindex, '* * * * *')
+
+  scheduler.start()
   server.start()
 }
 
