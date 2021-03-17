@@ -1,3 +1,3 @@
-import { DBSource, GraphQLSink } from '../interfaces'
+import { Source, Sink, Transformer, Producer } from '../interfaces'
 
-export { DBSource, GraphQLSink }
+export { Source, Sink, Transformer, Producer }

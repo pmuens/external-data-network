@@ -1,3 +1,5 @@
-import { FieldConfig as GraphQLFieldConfig } from '../graphql'
+import { DB } from '../db'
+import { GraphQL } from '../graphql'
+import { DataType } from '../types'
 
-export { GraphQLFieldConfig }
+export { DB, GraphQL, DataType }

@@ -11,42 +11,47 @@ import {
   GraphQLType
 } from 'graphql'
 
-import { Klass, Types, DBFilters } from './types'
-import { DBSource, GraphQLSink } from './interfaces'
-import { toPascalCase, toCamelCase, isKlass } from './shared'
+import { DB } from './db'
+import { DataType } from './types'
+import { toPascalCase, toCamelCase } from './shared'
+import { Source, Sink, Transformer, Producer } from './interfaces'
 
-export class GraphQL {
-  private _db: DBSource
+export class GraphQL implements Sink {
+  private _db: DB
   private _express: Express
   private _fieldConfigs: FieldConfig[]
 
-  constructor(server: Server, db: DBSource) {
+  name = GraphQL.name
+
+  constructor(server: Server, db: DB) {
     this._db = db
     this._express = server.express
     this._fieldConfigs = []
   }
 
-  add<A extends Klass | GraphQLSink>(input: A): void {
-    // `Klass` support
-    if (isKlass(input)) {
-      const klass = input
-      const name = getFieldName(klass)
-      const mappings = getTypeMappings(klass.types)
-      const type = getType(klass, mappings)
-      const args = getArgs(mappings)
-
-      this._fieldConfigs.push({
-        name,
-        type: new GraphQLList(type),
-        args,
-        resolve: (_, args) => this._db.find(klass, args as DBFilters)
-      })
-      return
+  async write<T>(_: Source | Transformer, data: T[]): Promise<number> {
+    const fieldConfigs = (data as unknown) as FieldConfig[]
+    let added = 0
+    for (const config of fieldConfigs) {
+      this._fieldConfigs.push(config)
+      added++
     }
-    // `GraphQLSink` support
-    const sink = input as GraphQLSink
-    const fieldConfigs = sink.getFieldConfigs(this._db)
-    fieldConfigs.forEach((config) => this._fieldConfigs.push(config))
+    return added
+  }
+
+  add(source: Source & Producer): void {
+    const name = getFieldName(source)
+    const mappings = getTypeMappings(source.getDataType())
+    const type = getType(source, mappings)
+    const args = getArgs(mappings)
+
+    this._fieldConfigs.push({
+      name,
+      type: new GraphQLList(type),
+      args,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      resolve: (_, args) => this._db.read({ klass: source, filters: args as any })
+    })
   }
 
   setup(): void {
@@ -64,7 +69,7 @@ export class GraphQL {
   }
 }
 
-export type FieldConfig = {
+type FieldConfig = {
   type: GraphQLType
   name?: string
   args?: unknown
@@ -76,17 +81,17 @@ export type FieldConfig = {
   ) => Promise<unknown> | unknown
 }
 
-function getFieldName(klass: Klass): string {
-  return toCamelCase(klass.name)
+function getFieldName(source: Source): string {
+  return toCamelCase(source.name)
 }
 
-function getTypeName(klass: Klass): string {
-  return toPascalCase(klass.name)
+function getTypeName(source: Source): string {
+  return toPascalCase(source.name)
 }
 
-function getTypeMappings(types: Types): TypeMapping[] {
+function getTypeMappings(type: DataType): TypeMapping[] {
   const result: TypeMapping[] = []
-  for (const [key, value] of Object.entries(types)) {
+  for (const [key, value] of Object.entries(type)) {
     const typeName = toCamelCase(key)
     if (value === 'string') {
       result.push({
@@ -144,8 +149,8 @@ function getFieldConfigMap(fields: FieldConfig[]): FieldConfigMap {
   }, {})
 }
 
-function getType(klass: Klass, mappings: TypeMapping[]): GraphQLObjectType {
-  const name = getTypeName(klass)
+function getType(source: Source, mappings: TypeMapping[]): GraphQLObjectType {
+  const name = getTypeName(source)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fields: any = mappings.reduce((accum: FieldConfigMap, item) => {
     accum[item.typeName] = {

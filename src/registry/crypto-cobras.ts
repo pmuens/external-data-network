@@ -1,16 +1,21 @@
 import { GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from 'graphql'
 
-import { DBSource, GraphQLSink, GraphQLFieldConfig } from '../host'
-import { EthereumEvents } from '.'
+import { DB, GraphQL } from '../host/types'
+import { Transformer } from '../host/interfaces'
+import { EthereumEvents } from './ethereum-events'
 
-export class CryptoCobras implements GraphQLSink {
+export class CryptoCobras implements Transformer {
   private _address: string
+
+  name = CryptoCobras.name
 
   constructor(address: string) {
     this._address = address
   }
 
-  getFieldConfigs(db: DBSource): GraphQLFieldConfig[] {
+  async transform(db: DB, graphql: GraphQL): Promise<number> {
+    let transformed = 0
+
     const type = new GraphQLObjectType({
       name: 'CryptoCobra',
       fields: {
@@ -24,11 +29,14 @@ export class CryptoCobras implements GraphQLSink {
     const args = {
       id: { type: GraphQLString }
     }
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const resolve = (_: unknown, args: any) => {
-      const cobras = db.find(EthereumEvents, { address: this._address })
-      let result = cobras.map((item) => ({
+    const resolve = async (_: unknown, args: any) => {
+      const klass = EthereumEvents
+      const filters = { address: this._address }
+
+      const cobras = await db.read({ klass, filters })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let result = cobras.map((item: any) => ({
         id: item.arguments[1],
         matronId: item.arguments[2],
         sireId: item.arguments[3],
@@ -40,8 +48,7 @@ export class CryptoCobras implements GraphQLSink {
       }
       return result
     }
-
-    return [
+    const fieldConfigs = [
       {
         name: 'cryptoCobras',
         type: new GraphQLList(type),
@@ -49,5 +56,10 @@ export class CryptoCobras implements GraphQLSink {
         resolve
       }
     ]
+
+    graphql.write((CryptoCobras as unknown) as Transformer, fieldConfigs)
+
+    transformed++
+    return transformed
   }
 }

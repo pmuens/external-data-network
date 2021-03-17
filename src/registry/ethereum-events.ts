@@ -2,22 +2,36 @@
 
 import { ethers } from 'ethers'
 
-export class EthereumEvents {
+import { DataType } from '../host/types'
+import { Source, Producer } from '../host/interfaces'
+
+export class EthereumEvents implements Source, Producer {
   private _url: string
+  private _address: string
+  private _event: string
 
-  // NOTE: Keep in sync with types of returned items
-  static types = {
-    address: 'string',
-    event: 'string',
-    signature: 'string',
-    arguments: 'string[]'
-  }
+  name = EthereumEvents.name
 
-  constructor(url: string) {
+  constructor(url: string, address: string, event: string) {
     this._url = url
+    this._address = address
+    this._event = event
   }
 
-  async fetch(
+  getDataType(): DataType {
+    return {
+      address: 'string',
+      event: 'string',
+      signature: 'string',
+      arguments: 'string[]'
+    }
+  }
+
+  async read<T>(): Promise<T[]> {
+    return (this._fetch(this._address, this._event) as unknown) as Promise<T[]>
+  }
+
+  private async _fetch(
     address: string,
     event: string,
     opts: Options = { toBlock: 'latest' }

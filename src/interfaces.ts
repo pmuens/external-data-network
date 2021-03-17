@@ -1,13 +1,17 @@
-import { FieldConfig as GraphQLFieldConfig } from './graphql'
-import { Klass, DBFilters } from './types'
+import { DataType, Klass } from './types'
 
-// --- Sources ---
-export interface DBSource {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  find<T extends Klass>(klass: T, filters: DBFilters): any[]
+export interface Source extends Klass {
+  read<A, B>(args?: A): Promise<B[]>
 }
 
-// --- Sinks ---
-export interface GraphQLSink {
-  getFieldConfigs(db: DBSource): GraphQLFieldConfig[]
+export interface Sink extends Klass {
+  write<T>(origin: Source | Transformer, data: T[]): Promise<number>
+}
+
+export interface Transformer extends Klass {
+  transform(source: Source, sink: Sink): Promise<number>
+}
+
+export interface Producer extends Klass {
+  getDataType(): DataType
 }

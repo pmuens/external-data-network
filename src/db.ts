@@ -2,27 +2,37 @@ import dotenv from 'dotenv'
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { toSnakeCase } from './shared'
-import { DBSource } from './interfaces'
-import { DBFilters, Klass, Types } from './types'
+import { Source, Sink, Producer } from './interfaces'
+import { Klass, DataType } from './types'
 
 dotenv.config()
 
 const { DB_FILE_PATH } = process.env
 
-export class DB implements DBSource {
+export class DB implements Source, Sink {
   private _db: BetterSqlite3
+
+  name = DB.name
 
   constructor(filePath: string = DB_FILE_PATH as string) {
     this._db = new Database(filePath)
   }
 
-  add(klass: Klass): void {
-    this.ensureTable(klass)
+  async read<A, B>(args: A & Args): Promise<B[]> {
+    const klass = args.klass
+    const filters = args.filters
+    return Promise.resolve(this._find(klass, filters)) as Promise<B[]>
   }
 
-  insert<T>(klass: Klass, data: T[]): number {
-    const name = getTableName(klass)
-    const mappings = getColumnMappings(klass.types)
+  async write<T>(source: Source & Producer, data: T[]): Promise<number> {
+    this._ensureTable(source)
+    const inserted = this._insert(source, data)
+    return Promise.resolve(inserted)
+  }
+
+  private _insert<T>(source: Source & Producer, data: T[]): number {
+    const name = getTableName(source)
+    const mappings = getColumnMappings(source.getDataType())
 
     const columnNames = mappings.map((item) => item.columnName).join(',')
     const placeholders = mappings.map(() => '?').join(',')
@@ -43,9 +53,8 @@ export class DB implements DBSource {
     return inserted
   }
 
-  find(klass: Klass, filters: DBFilters): unknown[] {
+  private _find(klass: Klass, filters: Filters): unknown[] {
     const name = getTableName(klass)
-
     let SQL = 'WHERE '
     const clauses = []
     const values = []
@@ -60,9 +69,9 @@ export class DB implements DBSource {
     return parseObjects(result)
   }
 
-  private ensureTable(klass: Klass) {
-    const name = getTableName(klass)
-    const mappings = getColumnMappings(klass.types)
+  private _ensureTable(source: Source & Producer) {
+    const name = getTableName(source)
+    const mappings = getColumnMappings(source.getDataType())
 
     const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS ${name} (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -94,9 +103,9 @@ function getColumnName(key: string): string {
   return toSnakeCase(key)
 }
 
-function getColumnMappings(types: Types): ColumnMapping[] {
+function getColumnMappings(type: DataType): ColumnMapping[] {
   const result: ColumnMapping[] = []
-  for (const [key, value] of Object.entries(types)) {
+  for (const [key, value] of Object.entries(type)) {
     const columnName = getColumnName(key)
     if (value === 'string') {
       result.push({
@@ -158,6 +167,14 @@ function parseObjects<T>(data: T[]): T[] {
   }
   return data
 }
+
+type Args = {
+  klass: Klass
+  filters: Filters
+}
+
+// TODO: Enforce non-empty `Filters` via type system
+type Filters = { [key: string]: string | number }
 
 // TODO: Make indexing explicit
 type ColumnMapping = {
