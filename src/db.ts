@@ -1,13 +1,15 @@
 import dotenv from 'dotenv'
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
-import { Klass, Types, toSnakeCase } from './shared'
+import { toSnakeCase } from './shared'
+import { DBSource } from './interfaces'
+import { DBFilters, Klass, Types } from './types'
 
 dotenv.config()
 
 const { DB_FILE_PATH } = process.env
 
-export class DB {
+export class DB implements DBSource {
   private _db: BetterSqlite3
 
   constructor(filePath: string = DB_FILE_PATH as string) {
@@ -18,8 +20,7 @@ export class DB {
     this.ensureTable(klass)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  insert<B>(klass: Klass, data: B[]): number {
+  insert<T>(klass: Klass, data: T[]): number {
     const name = getTableName(klass)
     const mappings = getColumnMappings(klass.types)
 
@@ -30,7 +31,7 @@ export class DB {
     )
 
     let inserted = 0
-    this._db.transaction((data: B[]) => {
+    this._db.transaction((data: T[]) => {
       data = stringifyObjects(data)
       for (const item of data) {
         const values = Object.values(item)
@@ -42,8 +43,7 @@ export class DB {
     return inserted
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  find(klass: Klass, filters: Filters): any[] {
+  find(klass: Klass, filters: DBFilters): unknown[] {
     const name = getTableName(klass)
 
     let SQL = 'WHERE '
@@ -85,9 +85,6 @@ export class DB {
     })()
   }
 }
-
-// TODO: Enforce non-empty Filters via type system
-export type Filters = { [key: string]: string | number }
 
 function getTableName(klass: Klass): string {
   return toSnakeCase(klass.name)

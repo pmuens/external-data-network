@@ -1,6 +1,6 @@
 import { GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from 'graphql'
 
-import { GraphQLSink, GraphQLFieldConfig, db } from '../host'
+import { DBSource, GraphQLSink, GraphQLFieldConfig } from '../host'
 import { EthereumEvents } from '.'
 
 export class CryptoCobras implements GraphQLSink {
@@ -10,7 +10,7 @@ export class CryptoCobras implements GraphQLSink {
     this._address = address
   }
 
-  getFieldConfigs(): GraphQLFieldConfig[] {
+  getFieldConfigs(db: DBSource): GraphQLFieldConfig[] {
     const type = new GraphQLObjectType({
       name: 'CryptoCobra',
       fields: {

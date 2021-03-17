@@ -1,7 +1,6 @@
 import { ApolloServer } from 'apollo-server-express'
 import { Express } from 'express'
 import { Server } from './server'
-import { DB, Filters } from './db'
 import {
   GraphQLBoolean,
   GraphQLInt,
@@ -12,15 +11,16 @@ import {
   GraphQLType
 } from 'graphql'
 
-import { Klass, Types, toPascalCase, toCamelCase, isKlass } from './shared'
-import { GraphQLSink } from './host/interfaces'
+import { Klass, Types, DBFilters } from './types'
+import { DBSource, GraphQLSink } from './interfaces'
+import { toPascalCase, toCamelCase, isKlass } from './shared'
 
 export class GraphQL {
-  private _db: DB
+  private _db: DBSource
   private _express: Express
   private _fieldConfigs: FieldConfig[]
 
-  constructor(server: Server, db: DB) {
+  constructor(server: Server, db: DBSource) {
     this._db = db
     this._express = server.express
     this._fieldConfigs = []
@@ -39,13 +39,13 @@ export class GraphQL {
         name,
         type: new GraphQLList(type),
         args,
-        resolve: (_, args) => this._db.find(klass, args as Filters)
+        resolve: (_, args) => this._db.find(klass, args as DBFilters)
       })
       return
     }
     // `GraphQLSink` support
     const sink = input as GraphQLSink
-    const fieldConfigs = sink.getFieldConfigs()
+    const fieldConfigs = sink.getFieldConfigs(this._db)
     fieldConfigs.forEach((config) => this._fieldConfigs.push(config))
   }
 

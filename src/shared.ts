@@ -1,9 +1,4 @@
-export type Klass = {
-  name: string
-  types: Types
-}
-
-export type Types = { [key: string]: string }
+import { Klass } from './types'
 
 export function isKlass<T>(input: Klass | T): input is Klass {
   return (input as Klass).name !== undefined

@@ -1,4 +1,4 @@
-import { Sink, GraphQLSink } from './interfaces'
-import { GraphQLFieldConfig, db } from './utils'
+import { DBSource, GraphQLSink } from './interfaces'
+import { GraphQLFieldConfig } from './types'
 
-export { Sink, GraphQLSink, GraphQLFieldConfig, db }
+export { DBSource, GraphQLSink, GraphQLFieldConfig }
