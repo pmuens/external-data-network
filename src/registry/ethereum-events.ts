@@ -9,13 +9,15 @@ export class EthereumEvents implements Source {
   private _url: string
   private _address: string
   private _signature: string
+  private _fromBlock: number
 
   name = EthereumEvents.name
 
-  constructor(url: string, address: string, signature: string) {
+  constructor(url: string, address: string, signature: string, fromBlock: number) {
     this._url = url
     this._address = address
     this._signature = signature
+    this._fromBlock = fromBlock
   }
 
   getOutputDataType(): DataType {
@@ -28,7 +30,7 @@ export class EthereumEvents implements Source {
   }
 
   async read<T>(): Promise<T[]> {
-    const fromBlock = 0
+    const fromBlock = this._fromBlock
     const toBlock = 'latest'
 
     const event = `event ${this._signature}`
@@ -39,7 +41,10 @@ export class EthereumEvents implements Source {
     const eventFilter = contract.filters[name]()
     const events = await contract.queryFilter(eventFilter, fromBlock, toBlock)
 
+    let maxBlockNumber = fromBlock
+
     const result: Data[] = events.map((item) => {
+      maxBlockNumber = Math.max(maxBlockNumber, item.blockNumber)
       const { address, event } = item
       const result: Data = {
         address,
@@ -49,6 +54,8 @@ export class EthereumEvents implements Source {
       }
       return result
     })
+
+    this._fromBlock = maxBlockNumber
 
     return (Promise.resolve(result) as unknown) as Promise<T[]>
   }
