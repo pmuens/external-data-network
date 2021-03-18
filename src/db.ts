@@ -3,13 +3,23 @@ import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { toSnakeCase } from './shared'
 import { Source, Sink } from './interfaces'
-import { Klass, DataType } from './types'
+import { Klass, OutputTypeDef } from './types'
 
 dotenv.config()
 
 const { DB_FILE_PATH } = process.env
 
-export class DB implements Source, Sink {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Input = any
+// NOTE: Keep these in sync
+const OutputType: OutputTypeDef = {
+  unknown: 'unknown'
+}
+export type Output = {
+  unknown: unknown
+}
+
+export class DB implements Source<Output>, Sink<Input> {
   private _db: BetterSqlite3
 
   name = DB.name
@@ -19,28 +29,26 @@ export class DB implements Source, Sink {
   }
 
   // The `DB` as a `Source` is a special case since
-  // the real output `DataType` varies during runtime
+  // the real `OutputTypeDef` varies during runtime
   // as we're able to query arbitrary data.
-  getOutputDataType(): DataType {
-    return { unknown: 'unknown' }
+  getOutputType(): OutputTypeDef {
+    return OutputType
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async read<T>(args: T & Args): Promise<any[]> {
-    const klass = args.klass
-    const filters = args.filters
+  async read<T>(args: T & Args): Promise<Output[]> {
+    const { klass, filters } = args
     return Promise.resolve(this._find(klass, filters))
   }
 
-  async write<T>(source: Source, data: T[]): Promise<number> {
+  async write(source: Source<Input>, data: Input[]): Promise<number> {
     this._ensureTable(source)
     const inserted = this._insert(source, data)
     return Promise.resolve(inserted)
   }
 
-  private _insert<T>(source: Source, data: T[]): number {
+  private _insert(source: Source<Input>, data: Input[]): number {
     const name = getTableName(source)
-    const mappings = getColumnMappings(source.getOutputDataType())
+    const mappings = getColumnMappings(source.getOutputType())
 
     const columnNames = mappings.map((item) => item.columnName).join(',')
     const placeholders = mappings.map(() => '?').join(',')
@@ -49,7 +57,7 @@ export class DB implements Source, Sink {
     )
 
     let inserted = 0
-    this._db.transaction((data: T[]) => {
+    this._db.transaction((data: Input[]) => {
       data = stringifyObjects(data)
       for (const item of data) {
         const values = Object.values(item)
@@ -61,7 +69,7 @@ export class DB implements Source, Sink {
     return inserted
   }
 
-  private _find(klass: Klass, filters: Filters): unknown[] {
+  private _find(klass: Klass, filters: Filters): Output[] {
     const name = getTableName(klass)
     let SQL = 'WHERE '
     const clauses = []
@@ -77,9 +85,9 @@ export class DB implements Source, Sink {
     return parseObjects(result)
   }
 
-  private _ensureTable(source: Source) {
+  private _ensureTable(source: Source<Input>) {
     const name = getTableName(source)
-    const mappings = getColumnMappings(source.getOutputDataType())
+    const mappings = getColumnMappings(source.getOutputType())
 
     const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS ${name} (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,7 +119,7 @@ function getColumnName(key: string): string {
   return toSnakeCase(key)
 }
 
-function getColumnMappings(type: DataType): ColumnMapping[] {
+function getColumnMappings(type: OutputTypeDef): ColumnMapping[] {
   const result: ColumnMapping[] = []
   for (const [key, value] of Object.entries(type)) {
     const columnName = getColumnName(key)

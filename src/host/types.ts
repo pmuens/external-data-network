@@ -1,5 +1,5 @@
-import { DB } from '../db'
-import { GraphQL } from '../graphql'
-import { DataType } from '../types'
+import { Klass, OutputTypeDef } from '../types'
+import { DB, Input as DBInput, Output as DBOutput } from '../db'
+import { GraphQL, Input as GraphQLInput } from '../graphql'
 
-export { DB, GraphQL, DataType }
+export { DB, DBInput, DBOutput, GraphQL, GraphQLInput, Klass, OutputTypeDef }

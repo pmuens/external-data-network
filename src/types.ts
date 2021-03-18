@@ -2,6 +2,6 @@ export type Klass = {
   name: string
 }
 
-export type DataType = {
+export type OutputTypeDef = {
   [key: string]: 'string' | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]' | 'unknown'
 }

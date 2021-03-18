@@ -1,10 +1,10 @@
 import { GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from 'graphql'
 
-import { DB, GraphQL } from '../host/types'
+import { DBOutput, DB, GraphQL, GraphQLInput } from '../host/types'
 import { Transformer } from '../host/interfaces'
 import { EthereumEvents } from './ethereum-events'
 
-export class CryptoCobras implements Transformer {
+export class CryptoCobras implements Transformer<DBOutput, GraphQLInput> {
   private _address: string
 
   name = CryptoCobras.name
@@ -57,7 +57,7 @@ export class CryptoCobras implements Transformer {
       }
     ]
 
-    graphql.write((CryptoCobras as unknown) as Transformer, fieldConfigs)
+    graphql.write(CryptoCobras, fieldConfigs)
 
     transformed++
     return transformed

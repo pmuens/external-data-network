@@ -2,10 +2,24 @@
 
 import { ethers } from 'ethers'
 
-import { DataType } from '../host/types'
+import { OutputTypeDef } from '../host/types'
 import { Source } from '../host/interfaces'
 
-export class EthereumEvents implements Source {
+// NOTE: Keep these in sync
+const OutputType: OutputTypeDef = {
+  address: 'string',
+  event: 'string',
+  signature: 'string',
+  arguments: 'string[]'
+}
+export type Output = {
+  address: string
+  event: string
+  signature: string
+  arguments: string[]
+}
+
+export class EthereumEvents implements Source<Output> {
   private _url: string
   private _address: string
   private _signature: string
@@ -20,16 +34,11 @@ export class EthereumEvents implements Source {
     this._fromBlock = fromBlock
   }
 
-  getOutputDataType(): DataType {
-    return {
-      address: 'string',
-      event: 'string',
-      signature: 'string',
-      arguments: 'string[]'
-    }
+  getOutputType(): OutputTypeDef {
+    return OutputType
   }
 
-  async read<T>(): Promise<T[]> {
+  async read(): Promise<Output[]> {
     const fromBlock = this._fromBlock
     const toBlock = 'latest'
 
@@ -43,10 +52,10 @@ export class EthereumEvents implements Source {
 
     let maxBlockNumber = fromBlock
 
-    const result: Data[] = events.map((item) => {
+    const result: Output[] = events.map((item) => {
       maxBlockNumber = Math.max(maxBlockNumber, item.blockNumber)
       const { address, event } = item
-      const result: Data = {
+      const result: Output = {
         address,
         event: event!,
         signature: item.eventSignature!,
@@ -57,13 +66,6 @@ export class EthereumEvents implements Source {
 
     this._fromBlock = maxBlockNumber
 
-    return (Promise.resolve(result) as unknown) as Promise<T[]>
+    return Promise.resolve(result)
   }
-}
-
-type Data = {
-  address: string
-  event: string
-  signature: string
-  arguments: string[]
 }

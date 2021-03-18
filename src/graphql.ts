@@ -12,11 +12,13 @@ import {
 } from 'graphql'
 
 import { DB } from './db'
-import { DataType } from './types'
+import { Klass, OutputTypeDef } from './types'
 import { toPascalCase, toCamelCase } from './shared'
-import { Source, Sink, Transformer } from './interfaces'
+import { Source, Sink } from './interfaces'
 
-export class GraphQL implements Sink {
+export type Input = FieldConfig
+
+export class GraphQL implements Sink<Input> {
   private _db: DB
   private _express: Express
   private _fieldConfigs: FieldConfig[]
@@ -29,8 +31,8 @@ export class GraphQL implements Sink {
     this._fieldConfigs = []
   }
 
-  async write<T>(_: Source | Transformer, data: T[]): Promise<number> {
-    const fieldConfigs = (data as unknown) as FieldConfig[]
+  async write(_: Klass, data: Input[]): Promise<number> {
+    const fieldConfigs = data
     let added = 0
     for (const config of fieldConfigs) {
       this._fieldConfigs.push(config)
@@ -39,9 +41,10 @@ export class GraphQL implements Sink {
     return added
   }
 
-  add(source: Source): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  add(source: Source<any>): void {
     const name = getFieldName(source)
-    const mappings = getTypeMappings(source.getOutputDataType())
+    const mappings = getTypeMappings(source.getOutputType())
     const type = getType(source, mappings)
     const args = getArgs(mappings)
 
@@ -69,27 +72,15 @@ export class GraphQL implements Sink {
   }
 }
 
-type FieldConfig = {
-  type: GraphQLType
-  name?: string
-  args?: unknown
-  resolve?: (
-    source: unknown,
-    args: unknown,
-    context: unknown,
-    info: unknown
-  ) => Promise<unknown> | unknown
+function getFieldName(klass: Klass): string {
+  return toCamelCase(klass.name)
 }
 
-function getFieldName(source: Source): string {
-  return toCamelCase(source.name)
+function getTypeName(klass: Klass): string {
+  return toPascalCase(klass.name)
 }
 
-function getTypeName(source: Source): string {
-  return toPascalCase(source.name)
-}
-
-function getTypeMappings(type: DataType): TypeMapping[] {
+function getTypeMappings(type: OutputTypeDef): TypeMapping[] {
   const result: TypeMapping[] = []
   for (const [key, value] of Object.entries(type)) {
     const typeName = toCamelCase(key)
@@ -149,7 +140,8 @@ function getFieldConfigMap(fields: FieldConfig[]): FieldConfigMap {
   }, {})
 }
 
-function getType(source: Source, mappings: TypeMapping[]): GraphQLObjectType {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getType(source: Source<any>, mappings: TypeMapping[]): GraphQLObjectType {
   const name = getTypeName(source)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fields: any = mappings.reduce((accum: FieldConfigMap, item) => {
@@ -170,6 +162,18 @@ function getArgs(mappings: TypeMapping[]): FieldConfigMap {
     }
     return accum
   }, {})
+}
+
+type FieldConfig = {
+  type: GraphQLType
+  name?: string
+  args?: unknown
+  resolve?: (
+    source: unknown,
+    args: unknown,
+    context: unknown,
+    info: unknown
+  ) => Promise<unknown> | unknown
 }
 
 type FieldConfigMap = {
