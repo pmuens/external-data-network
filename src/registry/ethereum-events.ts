@@ -3,9 +3,9 @@
 import { ethers } from 'ethers'
 
 import { DataType } from '../host/types'
-import { Source, Producer } from '../host/interfaces'
+import { Source } from '../host/interfaces'
 
-export class EthereumEvents implements Source, Producer {
+export class EthereumEvents implements Source {
   private _url: string
   private _address: string
   private _event: string
@@ -18,7 +18,7 @@ export class EthereumEvents implements Source, Producer {
     this._event = event
   }
 
-  getDataType(): DataType {
+  getOutputDataType(): DataType {
     return {
       address: 'string',
       event: 'string',

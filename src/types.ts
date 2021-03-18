@@ -3,5 +3,5 @@ export type Klass = {
 }
 
 export type DataType = {
-  [key: string]: 'string' | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]'
+  [key: string]: 'string' | 'number' | 'boolean' | 'string[]' | 'number[]' | 'boolean[]' | 'unknown'
 }

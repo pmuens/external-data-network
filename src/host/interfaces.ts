@@ -1,3 +1,3 @@
-import { Source, Sink, Transformer, Producer } from '../interfaces'
+import { Source, Sink, Transformer } from '../interfaces'
 
-export { Source, Sink, Transformer, Producer }
+export { Source, Sink, Transformer }

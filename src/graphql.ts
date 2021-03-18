@@ -14,7 +14,7 @@ import {
 import { DB } from './db'
 import { DataType } from './types'
 import { toPascalCase, toCamelCase } from './shared'
-import { Source, Sink, Transformer, Producer } from './interfaces'
+import { Source, Sink, Transformer } from './interfaces'
 
 export class GraphQL implements Sink {
   private _db: DB
@@ -39,9 +39,9 @@ export class GraphQL implements Sink {
     return added
   }
 
-  add(source: Source & Producer): void {
+  add(source: Source): void {
     const name = getFieldName(source)
-    const mappings = getTypeMappings(source.getDataType())
+    const mappings = getTypeMappings(source.getOutputDataType())
     const type = getType(source, mappings)
     const args = getArgs(mappings)
 

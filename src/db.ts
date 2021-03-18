@@ -2,7 +2,7 @@ import dotenv from 'dotenv'
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { toSnakeCase } from './shared'
-import { Source, Sink, Producer } from './interfaces'
+import { Source, Sink } from './interfaces'
 import { Klass, DataType } from './types'
 
 dotenv.config()
@@ -18,21 +18,29 @@ export class DB implements Source, Sink {
     this._db = new Database(filePath)
   }
 
-  async read<A, B>(args: A & Args): Promise<B[]> {
-    const klass = args.klass
-    const filters = args.filters
-    return Promise.resolve(this._find(klass, filters)) as Promise<B[]>
+  // The `DB` as a `Source` is a special case since
+  // the real output `DataType` varies during runtime
+  // as we're able to query arbitrary data.
+  getOutputDataType(): DataType {
+    return { unknown: 'unknown' }
   }
 
-  async write<T>(source: Source & Producer, data: T[]): Promise<number> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async read<T>(args: T & Args): Promise<any[]> {
+    const klass = args.klass
+    const filters = args.filters
+    return Promise.resolve(this._find(klass, filters))
+  }
+
+  async write<T>(source: Source, data: T[]): Promise<number> {
     this._ensureTable(source)
     const inserted = this._insert(source, data)
     return Promise.resolve(inserted)
   }
 
-  private _insert<T>(source: Source & Producer, data: T[]): number {
+  private _insert<T>(source: Source, data: T[]): number {
     const name = getTableName(source)
-    const mappings = getColumnMappings(source.getDataType())
+    const mappings = getColumnMappings(source.getOutputDataType())
 
     const columnNames = mappings.map((item) => item.columnName).join(',')
     const placeholders = mappings.map(() => '?').join(',')
@@ -69,9 +77,9 @@ export class DB implements Source, Sink {
     return parseObjects(result)
   }
 
-  private _ensureTable(source: Source & Producer) {
+  private _ensureTable(source: Source) {
     const name = getTableName(source)
-    const mappings = getColumnMappings(source.getDataType())
+    const mappings = getColumnMappings(source.getOutputDataType())
 
     const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS ${name} (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
