@@ -11,15 +11,9 @@ const { DB_FILE_PATH } = process.env
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Input = any
-// NOTE: Keep these in sync
-const OutputType: OutputTypeDef = {
-  unknown: 'unknown'
-}
-export type Output = {
-  unknown: unknown
-}
+export type Output<T> = T
 
-export class DB implements Source<Output>, Sink<Input> {
+export class DB<T> implements Source<Output<T>>, Sink<Input> {
   private _db: BetterSqlite3
 
   name = DB.name
@@ -32,10 +26,10 @@ export class DB implements Source<Output>, Sink<Input> {
   // the real `OutputTypeDef` varies during runtime
   // as we're able to query arbitrary data.
   getOutputType(): OutputTypeDef {
-    return OutputType
+    return 'unknown'
   }
 
-  async read<T>(args: T & Args): Promise<Output[]> {
+  async read<A>(args: A & Args): Promise<Output<T>[]> {
     const { klass, filters } = args
     return Promise.resolve(this._find(klass, filters))
   }
@@ -69,7 +63,7 @@ export class DB implements Source<Output>, Sink<Input> {
     return inserted
   }
 
-  private _find(klass: Klass, filters: Filters): Output[] {
+  private _find(klass: Klass, filters: Filters): Output<T>[] {
     const values = []
     const name = getTableName(klass)
     let SQL = `SELECT * FROM ${name}`

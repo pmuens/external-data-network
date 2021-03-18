@@ -26,7 +26,8 @@ async function main() {
   const cobras = new CryptoCobras(address)
 
   // --- Core ---
-  const db = new DB()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = new DB<any>()
   const server = new Server(serverPort)
   const graphql = new GraphQL(server, db)
   const scheduler = new Scheduler()

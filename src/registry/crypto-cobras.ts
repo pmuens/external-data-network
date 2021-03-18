@@ -2,9 +2,9 @@ import { GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from 'graph
 
 import { DBOutput, DB, GraphQL, GraphQLInput } from '../host/types'
 import { Transformer } from '../host/interfaces'
-import { EthereumEvents } from './ethereum-events'
+import { EthereumEvents, Output as EEOutput } from './ethereum-events'
 
-export class CryptoCobras implements Transformer<DBOutput, GraphQLInput> {
+export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInput> {
   private _address: string
 
   name = CryptoCobras.name
@@ -13,7 +13,7 @@ export class CryptoCobras implements Transformer<DBOutput, GraphQLInput> {
     this._address = address
   }
 
-  async transform(db: DB, graphql: GraphQL): Promise<number> {
+  async transform(db: DB<EEOutput>, graphql: GraphQL): Promise<number> {
     let transformed = 0
 
     const type = new GraphQLObjectType({
@@ -35,8 +35,7 @@ export class CryptoCobras implements Transformer<DBOutput, GraphQLInput> {
       const filters = { address: this._address }
 
       const cobras = await db.read({ klass, filters })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let result = cobras.map((item: any) => ({
+      let result = cobras.map((item) => ({
         id: item.arguments[1],
         matronId: item.arguments[2],
         sireId: item.arguments[3],

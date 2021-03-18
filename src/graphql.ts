@@ -19,13 +19,13 @@ import { Source, Sink } from './interfaces'
 export type Input = FieldConfig
 
 export class GraphQL implements Sink<Input> {
-  private _db: DB
+  private _db: DB<unknown>
   private _express: Express
   private _fieldConfigs: FieldConfig[]
 
   name = GraphQL.name
 
-  constructor(server: Server, db: DB) {
+  constructor(server: Server, db: DB<unknown>) {
     this._db = db
     this._express = server.express
     this._fieldConfigs = []
