@@ -70,17 +70,22 @@ export class DB implements Source<Output>, Sink<Input> {
   }
 
   private _find(klass: Klass, filters: Filters): Output[] {
-    const name = getTableName(klass)
-    let SQL = 'WHERE '
-    const clauses = []
     const values = []
-    for (const [key, value] of Object.entries(filters)) {
-      clauses.push(`${getColumnName(key)} = ?`)
-      values.push(value)
-    }
-    SQL += clauses.join(' AND ')
+    const name = getTableName(klass)
+    let SQL = `SELECT * FROM ${name}`
 
-    const SELECT_SQL = this._db.prepare(`SELECT * FROM ${name} ${SQL};`)
+    if (filters && Object.keys(filters).length) {
+      SQL += ' WHERE '
+      const clauses = []
+      for (const [key, value] of Object.entries(filters)) {
+        clauses.push(`${getColumnName(key)} = ?`)
+        values.push(value)
+      }
+      SQL += clauses.join(' AND ')
+    }
+
+    SQL += ';'
+    const SELECT_SQL = this._db.prepare(SQL)
     const result = SELECT_SQL.all(values)
     return parseObjects(result)
   }
@@ -189,7 +194,6 @@ type Args = {
   filters: Filters
 }
 
-// TODO: Enforce non-empty `Filters` via type system
 type Filters = { [key: string]: string | number }
 
 // TODO: Make indexing explicit
