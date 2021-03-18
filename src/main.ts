@@ -14,13 +14,13 @@ const { log } = console
 
 async function main() {
   const address = CRYPTO_COBRAS_ADDRESS as string
-  const event = 'event Birth(address,uint256,uint256,uint256,uint8,uint8)'
+  const signature = 'Birth(address,uint256,uint256,uint256,uint8,uint8)'
   const ethereumNodeUrl = `${ETHEREUM_URL}:${ETHEREUM_PORT}`
   const serverPort = parseInt(SERVER_PORT as string)
 
   // --- Registry ---
   // EthereumEvents
-  const ethereum = new EthereumEvents(ethereumNodeUrl, address, event)
+  const ethereum = new EthereumEvents(ethereumNodeUrl, address, signature)
   // CryptoCobras
   const cobras = new CryptoCobras(address)
 

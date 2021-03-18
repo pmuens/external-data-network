@@ -8,14 +8,14 @@ import { Source } from '../host/interfaces'
 export class EthereumEvents implements Source {
   private _url: string
   private _address: string
-  private _event: string
+  private _signature: string
 
   name = EthereumEvents.name
 
-  constructor(url: string, address: string, event: string) {
+  constructor(url: string, address: string, signature: string) {
     this._url = url
     this._address = address
-    this._event = event
+    this._signature = signature
   }
 
   getOutputDataType(): DataType {
@@ -28,22 +28,18 @@ export class EthereumEvents implements Source {
   }
 
   async read<T>(): Promise<T[]> {
-    return (this._fetch(this._address, this._event) as unknown) as Promise<T[]>
-  }
+    const fromBlock = 0
+    const toBlock = 'latest'
 
-  private async _fetch(
-    address: string,
-    event: string,
-    opts: Options = { toBlock: 'latest' }
-  ): Promise<Data[]> {
-    const { fromBlock, toBlock } = opts
+    const event = `event ${this._signature}`
+    const name = this._signature.match(/^(.+)\(/)![1]
 
     const provider = new ethers.providers.JsonRpcProvider(this._url)
-    const contract = new ethers.Contract(address, [event], provider)
-    const eventFilter = contract.filters.Birth()
+    const contract = new ethers.Contract(this._address, [event], provider)
+    const eventFilter = contract.filters[name]()
     const events = await contract.queryFilter(eventFilter, fromBlock, toBlock)
 
-    return events.map((item) => {
+    const result: Data[] = events.map((item) => {
       const { address, event } = item
       const result: Data = {
         address,
@@ -53,6 +49,8 @@ export class EthereumEvents implements Source {
       }
       return result
     })
+
+    return (Promise.resolve(result) as unknown) as Promise<T[]>
   }
 }
 
@@ -61,9 +59,4 @@ type Data = {
   event: string
   signature: string
   arguments: string[]
-}
-
-type Options = {
-  fromBlock?: number
-  toBlock: number | string
 }
