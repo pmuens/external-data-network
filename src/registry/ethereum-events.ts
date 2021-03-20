@@ -52,17 +52,19 @@ export class EthereumEvents implements Source<Output> {
 
     let maxBlockNumber = fromBlock
 
-    const result: Output[] = events.map((item) => {
-      maxBlockNumber = Math.max(maxBlockNumber, item.blockNumber)
-      const { address, event } = item
-      const result: Output = {
-        address,
-        event: event!,
-        signature: item.eventSignature!,
-        arguments: item.args!.map((arg) => arg.toString())
+    const result: Output[] = []
+    for (const item of events) {
+      maxBlockNumber = Math.max(fromBlock, item.blockNumber)
+      if (item.blockNumber > fromBlock) {
+        const { address, event } = item
+        result.push({
+          address,
+          event: event!,
+          signature: item.eventSignature!,
+          arguments: item.args!.map((arg) => arg.toString())
+        })
       }
-      return result
-    })
+    }
 
     this._fromBlock = maxBlockNumber
 
