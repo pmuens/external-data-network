@@ -19,9 +19,8 @@ export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInpu
     const type = new GraphQLObjectType({
       name: 'CryptoCobra',
       fields: {
+        owner: { type: GraphQLString },
         id: { type: GraphQLString },
-        matronId: { type: GraphQLString },
-        sireId: { type: GraphQLString },
         rarity: { type: GraphQLInt },
         genes: { type: GraphQLInt }
       }
@@ -36,11 +35,10 @@ export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInpu
 
       const cobras = await db.read({ klass, filters })
       let result = cobras.map((item) => ({
+        owner: item.arguments[0],
         id: item.arguments[1],
-        matronId: item.arguments[2],
-        sireId: item.arguments[3],
-        rarity: item.arguments[4],
-        genes: item.arguments[5]
+        rarity: item.arguments[2],
+        genes: item.arguments[3]
       }))
       if (args.id) {
         result = result.filter((item) => item.id === args.id)
