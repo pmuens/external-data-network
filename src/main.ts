@@ -4,48 +4,69 @@ import { DB } from './db'
 import { Server } from './server'
 import { GraphQL } from './graphql'
 import { Scheduler } from './scheduler'
-import { EthereumEvents, CryptoCobras } from './registry'
+import { EdnOracle, EthereumEvents, CryptoCobras, EthereumSmartContract } from './registry'
 
 dotenv.config()
 
-const { ETHEREUM_URL, ETHEREUM_PORT, CRYPTO_COBRAS_ADDRESS, SERVER_PORT } = process.env
+declare const process: {
+  env: {
+    [key: string]: string
+  }
+}
+
+const { CRYPTO_COBRAS_ADDRESS, ETHEREUM_RPC_URL, EDN_ORACLE_ADDRESS, SERVER_PORT } = process.env
 
 const { log } = console
 
 async function main() {
-  const fromBlock = 0
-  const address = CRYPTO_COBRAS_ADDRESS as string
-  const signature = 'Birth(address,uint256,uint256,uint256,uint8,uint8)'
-  const ethereumNodeUrl = `${ETHEREUM_URL}:${ETHEREUM_PORT}`
-  const serverPort = parseInt(SERVER_PORT as string)
-
   // --- Registry ---
-  // EthereumEvents
-  const ethereum = new EthereumEvents(ethereumNodeUrl, address, signature, fromBlock)
   // CryptoCobras
-  const cobras = new CryptoCobras(address)
+  const cobras = new CryptoCobras(CRYPTO_COBRAS_ADDRESS)
+  // EdnOracle
+  const oracle = new EdnOracle()
+  // EthereumEvents
+  const cobraEvents = new EthereumEvents(
+    ETHEREUM_RPC_URL,
+    CRYPTO_COBRAS_ADDRESS,
+    'Birth(address,uint256,uint64,uint8)',
+    0
+  )
+  const oracleEvents = new EthereumEvents(
+    ETHEREUM_RPC_URL,
+    EDN_ORACLE_ADDRESS,
+    'DataRequest(address,uint256,string,bytes,string,bytes)',
+    0
+  )
+  // EthereumSmartContract
+  const oracleContract = new EthereumSmartContract()
 
   // --- Core ---
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = new DB<any>()
-  const server = new Server(serverPort)
+  const server = new Server(parseInt(SERVER_PORT))
   const graphql = new GraphQL(server, db)
   const scheduler = new Scheduler()
 
-  async function reindex() {
-    log('Fetching new data...')
-    const result = await ethereum.read()
-    const indexed = await db.write(ethereum, result)
-    log(`Indexed ${indexed} new entries...`)
+  async function cobraEventWatcher() {
+    const result = await cobraEvents.read()
+    const processed = await db.write(cobraEvents, result)
+    log(`"cobraEventWatcher" --> Indexed ${processed} new entries...`)
+  }
+
+  async function oracleEventWatcher() {
+    const processed = await oracle.transform(oracleEvents, oracleContract)
+    log(`"oracleEventWatcher" --> Processed ${processed} new requests...`)
   }
 
   await cobras.transform(db, graphql)
 
-  graphql.add(ethereum)
+  graphql.add(cobraEvents)
   graphql.setup()
 
-  scheduler.add(reindex, '* * * * *')
-  await reindex()
+  scheduler.add(cobraEventWatcher, '*/5 * * * * *')
+  scheduler.add(oracleEventWatcher, '*/5 * * * * *')
+  await cobraEventWatcher()
+  await oracleEventWatcher()
 
   scheduler.start()
   server.start()
