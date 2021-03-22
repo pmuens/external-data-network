@@ -15,15 +15,27 @@ export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInpu
     let transformed = 0
 
     const types = `
-      type CryptoCobra {
+      type CryptoCobras {
         owner: String
         id: String
         rarity: Int
         genes: Int
       }
 
+      input CryptoCobrasOrderBy {
+        owner: CryptoCobrasSort
+        id: CryptoCobrasSort
+        rarity: CryptoCobrasSort
+        genes: CryptoCobrasSort
+      }
+
+      enum CryptoCobrasSort {
+        asc
+        desc
+      }
+
       type Query {
-        cryptoCobras(id: String, limit: Int!): [CryptoCobra]
+        cryptoCobras(id: String, orderBy: CryptoCobrasOrderBy, limit: Int!): [CryptoCobras]
       }
     `
 
@@ -34,8 +46,32 @@ export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInpu
           const klass = EthereumEvents
           const filters = { address: this._address }
           const limit = args.limit
+          let orderBy = args.orderBy
 
-          const cobras = await db.read({ klass, filters, limit })
+          // Map ordering to underlying `EthereumEvents` storage layout
+          if (orderBy && Object.keys(orderBy).length) {
+            const key = Object.keys(orderBy)[0]
+            const sort = orderBy[key]
+            if (key === 'owner') {
+              orderBy = {
+                'arguments[0]': sort
+              }
+            } else if (key === 'id') {
+              orderBy = {
+                'arguments[1]': sort
+              }
+            } else if (key === 'rarity') {
+              orderBy = {
+                'arguments[2]': sort
+              }
+            } else if (key === 'genes') {
+              orderBy = {
+                'arguments[3]': sort
+              }
+            }
+          }
+
+          const cobras = await db.read({ klass, filters, limit, orderBy })
           let result = cobras.map((item) => ({
             owner: item.arguments[0],
             id: item.arguments[1],

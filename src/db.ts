@@ -36,7 +36,7 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
   }
 
   async read<A>(args: A & Args): Promise<Output<T>[]> {
-    const { klass, limit } = args
+    const { klass, limit, orderBy } = args
     const filters = removeReservedKeys(args.filters)
 
     const values = []
@@ -44,6 +44,7 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
 
     let SQL = `SELECT json(data) AS data FROM ${name}`
 
+    // Apply filters
     if (filters && Object.keys(filters).length) {
       SQL += ' WHERE '
       const clauses = []
@@ -52,6 +53,16 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
         values.push(value)
       }
       SQL += clauses.join(' AND ')
+    }
+
+    // Apply ordering
+    if (orderBy && Object.keys(orderBy).length) {
+      const key = Object.keys(orderBy)[0]
+      let sort = 'ASC'
+      if (orderBy[key].toLocaleLowerCase() === 'desc') {
+        sort = 'DESC'
+      }
+      SQL += ` ORDER BY json_extract(data, '$.${key}') ${sort}`
     }
 
     SQL += ' LIMIT ?;'
@@ -108,7 +119,7 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
 }
 
 function removeReservedKeys(filters: Filters): Filters {
-  const reserved = ['limit']
+  const reserved = ['limit', 'orderBy', 'order_by']
 
   for (const key of Object.keys(filters)) {
     if (reserved.includes(key)) delete filters[key]
@@ -138,6 +149,9 @@ type Args = {
   klass: Klass
   filters: Filters
   limit: number
+  orderBy?: OrderBy
 }
 
 type Filters = { [key: string]: string | number }
+
+type OrderBy = { [key: string]: 'ASC' | 'asc' | 'DESC' | 'desc' }
