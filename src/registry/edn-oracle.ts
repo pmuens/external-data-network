@@ -13,7 +13,7 @@ export class EdnOracle implements Transformer<EEOutput, ESCInput> {
 
     let processed = 0
 
-    const result = []
+    const inputs = []
     for (const item of data) {
       const sender = item.arguments[0]
       const requestId = item.arguments[1]
@@ -22,21 +22,34 @@ export class EdnOracle implements Transformer<EEOutput, ESCInput> {
       const cbFuncName = item.arguments[4]
       const customData = item.arguments[5]
 
-      let response
+      let result
       let jobResult
       // TODO: Add support for more jobs
       if (jobName === 'random') {
         const [min, max] = ethers.utils.defaultAbiCoder.decode(['uint64', 'uint64'], jobArgs)
         jobResult = await runRandomJob(min, max)
-        response = ethers.utils.defaultAbiCoder.encode(
-          ['uint256', 'uint64', 'bytes'],
-          [requestId, jobResult, customData]
-        )
+        result = ethers.utils.defaultAbiCoder.encode(['uint64'], [jobResult])
       }
 
       const abi = [
         {
-          inputs: [{ internalType: 'bytes', name: 'response', type: 'bytes' }],
+          inputs: [
+            {
+              internalType: 'uint256',
+              name: 'id',
+              type: 'uint256'
+            },
+            {
+              internalType: 'bytes',
+              name: 'result',
+              type: 'bytes'
+            },
+            {
+              internalType: 'bytes',
+              name: 'customData',
+              type: 'bytes'
+            }
+          ],
           name: cbFuncName,
           outputs: [],
           stateMutability: 'nonpayable',
@@ -44,11 +57,16 @@ export class EdnOracle implements Transformer<EEOutput, ESCInput> {
         }
       ]
 
-      result.push({ address: sender, abi, function: cbFuncName, args: [response] })
+      inputs.push({
+        address: sender,
+        abi,
+        function: cbFuncName,
+        args: [requestId, result, customData]
+      })
       processed++
     }
 
-    await sink.write(result)
+    await sink.write(inputs)
 
     return Promise.resolve(processed)
   }
