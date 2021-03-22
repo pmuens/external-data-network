@@ -55,7 +55,7 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
     return Promise.resolve(data)
   }
 
-  async write(source: Source<Input>, data: Input[]): Promise<number> {
+  async write(data: Input[], source: Source<Input>): Promise<number> {
     const name = getTableName(source)
 
     const INSERT_SQL = this._db.prepare(`INSERT INTO ${name} (data) VALUES (json(?));`)

@@ -6,7 +6,7 @@ export interface Source<Output> extends Klass {
 }
 
 export interface Sink<Input> extends Klass {
-  write(source: Source<Input>, data: Input[]): Promise<number>
+  write(data: Input[], source?: Source<Input>): Promise<number>
 }
 
 export interface Transformer<Output, Input> extends Klass {

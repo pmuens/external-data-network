@@ -1,7 +1,6 @@
 import dotenv from 'dotenv'
 import { ethers } from 'ethers'
 
-import { Klass } from '../host/types'
 import { Sink } from '../host/interfaces'
 
 dotenv.config()
@@ -18,7 +17,7 @@ export type Input = {
 export class EthereumSmartContract implements Sink<Input> {
   name = EthereumSmartContract.name
 
-  async write(_: Klass, data: Input[]): Promise<number> {
+  async write(data: Input[]): Promise<number> {
     const mnemonic = ETHEREUM_MNEMONIC as string
     const url = ETHEREUM_RPC_URL as string
     const signer = getSigner(mnemonic, url)

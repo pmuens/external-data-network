@@ -54,7 +54,7 @@ async function main() {
 
   async function cobraEventWatcher() {
     const result = await cobraEvents.read()
-    const processed = await db.write(cobraEvents, result)
+    const processed = await db.write(result, cobraEvents)
     log(`"cobraEventWatcher" --> Indexed ${processed} new entries...`)
   }
 

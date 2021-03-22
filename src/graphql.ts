@@ -30,7 +30,7 @@ export class GraphQL implements Sink<Input> {
     this._resolvers = []
   }
 
-  async write(_: Klass, data: Input[]): Promise<number> {
+  async write(data: Input[]): Promise<number> {
     let added = 0
     for (const item of data) {
       this._types.push(item.types)
