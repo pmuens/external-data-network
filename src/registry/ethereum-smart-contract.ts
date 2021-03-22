@@ -17,6 +17,23 @@ export type Input = {
 export class EthereumSmartContract implements Sink<Input> {
   name = EthereumSmartContract.name
 
+  getInputExample(): Input {
+    return {
+      address: '0x0123456789abcdef',
+      abi: [
+        {
+          inputs: [{ name: 'id', type: 'uint256' }],
+          name: 'setId',
+          outputs: [],
+          stateMutability: 'nonpayable',
+          type: 'function'
+        }
+      ],
+      function: 'setId',
+      args: ['42']
+    }
+  }
+
   async write(data: Input[]): Promise<number> {
     const mnemonic = ETHEREUM_MNEMONIC as string
     const url = ETHEREUM_RPC_URL as string

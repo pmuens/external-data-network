@@ -30,6 +30,21 @@ export class GraphQL implements Sink<Input> {
     this._resolvers = []
   }
 
+  getInputExample(): Input {
+    return {
+      types: `
+        type Query {
+          name: String
+        }
+      `,
+      resolvers: {
+        Query: {
+          name: () => 'John Doe'
+        }
+      }
+    }
+  }
+
   async write(data: Input[]): Promise<number> {
     let added = 0
     for (const item of data) {

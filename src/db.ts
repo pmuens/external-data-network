@@ -22,6 +22,12 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
     this._db = new Database(filePath)
   }
 
+  getInputExample(): Input {
+    return {
+      arbitrary: 'value'
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getOutputExample(): Output<any> {
     return {
