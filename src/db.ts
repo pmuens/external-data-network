@@ -3,7 +3,7 @@ import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { toSnakeCase } from './shared'
 import { Source, Sink } from './interfaces'
-import { Klass, OutputTypeDef } from './types'
+import { Klass } from './types'
 
 dotenv.config()
 
@@ -29,57 +29,19 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
     }
   }
 
-  // The `DB` as a `Source` is a special case since
-  // the real `OutputTypeDef` varies during runtime
-  // as we're able to query arbitrary data.
-  getOutputType(): OutputTypeDef {
-    return 'unknown'
-  }
-
   async read<A>(args: A & Args): Promise<Output<T>[]> {
     const { klass, filters } = args
-    return Promise.resolve(this._find(klass, filters))
-  }
 
-  async write(source: Source<Input>, data: Input[]): Promise<number> {
-    this._ensureTable(source)
-    const inserted = this._insert(source, data)
-    return Promise.resolve(inserted)
-  }
-
-  private _insert(source: Source<Input>, data: Input[]): number {
-    const name = getTableName(source)
-    const mappings = getColumnMappings(source.getOutputType())
-
-    const columnNames = mappings.map((item) => item.columnName).join(',')
-    const placeholders = mappings.map(() => '?').join(',')
-    const INSERT_SQL = this._db.prepare(
-      `INSERT INTO ${name} (${columnNames}) VALUES (${placeholders});`
-    )
-
-    let inserted = 0
-    this._db.transaction((data: Input[]) => {
-      data = stringifyObjects(data)
-      for (const item of data) {
-        const values = Object.values(item)
-        const { changes } = INSERT_SQL.run(values)
-        if (changes > 0) inserted++
-      }
-    })(data)
-
-    return inserted
-  }
-
-  private _find(klass: Klass, filters: Filters): Output<T>[] {
     const values = []
     const name = getTableName(klass)
-    let SQL = `SELECT * FROM ${name}`
+
+    let SQL = `SELECT json(data) AS data FROM ${name}`
 
     if (filters && Object.keys(filters).length) {
       SQL += ' WHERE '
       const clauses = []
       for (const [key, value] of Object.entries(filters)) {
-        clauses.push(`${getColumnName(key)} = ?`)
+        clauses.push(`json_extract(data, '$.${key}') = ?`)
         values.push(value)
       }
       SQL += clauses.join(' AND ')
@@ -88,27 +50,46 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
     SQL += ';'
     const SELECT_SQL = this._db.prepare(SQL)
     const result = SELECT_SQL.all(values)
-    return parseObjects(result)
+    const data = result.map((item) => JSON.parse(item.data))
+
+    return Promise.resolve(data)
   }
 
-  private _ensureTable(source: Source<Input>) {
+  async write(source: Source<Input>, data: Input[]): Promise<number> {
     const name = getTableName(source)
-    const mappings = getColumnMappings(source.getOutputType())
 
-    const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS ${name} (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ${mappings.map((item) => `${item.columnName} ${item.columnSql}`).join(',')},
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      UNIQUE(${mappings.map((item) => item.columnName).join(',')}) ON CONFLICT IGNORE
-    );`
+    const INSERT_SQL = this._db.prepare(`INSERT INTO ${name} (data) VALUES (json(?));`)
 
-    const CREATE_INDEXES_SQL = mappings.reduce((accum, item) => {
-      if (item.isIndexed) {
-        return (accum += `CREATE INDEX IF NOT EXISTS idx_${item.columnName} ON ${name}(${item.columnName});`)
+    let inserted = 0
+    this._db.transaction((data: Input[]) => {
+      for (const item of data) {
+        const { changes } = INSERT_SQL.run([JSON.stringify(item)])
+        if (changes > 0) inserted++
       }
-      return accum
-    }, '')
+    })(data)
+
+    return Promise.resolve(inserted)
+  }
+
+  add(source: Source<unknown>): void {
+    const name = getTableName(source)
+    const keys = getOutputKeys(source)
+
+    const CREATE_TABLE_SQL = `
+      CREATE TABLE IF NOT EXISTS ${name} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        UNIQUE (data) ON CONFLICT IGNORE
+      );
+    `
+
+    const CREATE_INDEXES_SQL = keys.reduce(
+      (accum, key) =>
+        (accum += `CREATE INDEX IF NOT EXISTS idx_${key} ON ${name}(json_extract(data, '$.${key}'));`),
+      ''
+    )
 
     this._db.transaction(() => {
       this._db.exec(CREATE_TABLE_SQL)
@@ -117,77 +98,21 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
   }
 }
 
-function getTableName(klass: Klass): string {
-  return toSnakeCase(klass.name)
-}
+function getOutputKeys<T>(source: Source<T>): string[] {
+  const example = source.getOutputExample()
 
-function getColumnName(key: string): string {
-  return toSnakeCase(key)
-}
-
-function getColumnMappings(type: OutputTypeDef): ColumnMapping[] {
-  const result: ColumnMapping[] = []
-  for (const [key, value] of Object.entries(type)) {
-    const columnName = getColumnName(key)
-    if (value === 'string') {
-      result.push({
-        key,
-        columnName,
-        columnSql: 'VARCHAR(255) NOT NULL',
-        isIndexed: true
-      })
-    } else if (value === 'number') {
-      result.push({
-        key,
-        columnName,
-        columnSql: 'INTEGER NOT NULL',
-        isIndexed: false
-      })
-    } else if (value === 'boolean') {
-      result.push({
-        key,
-        columnName,
-        columnSql: 'BOOLEAN NOT NULL',
-        isIndexed: false
-      })
-    } else if (value.includes('[]')) {
-      result.push({
-        key,
-        columnName,
-        columnSql: 'TEXT NOT NULL',
-        isIndexed: false
-      })
+  const result = []
+  for (const [key, value] of Object.entries(example)) {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      result.push(key)
     }
   }
+
   return result
 }
 
-function stringifyObjects<T>(data: T[]): T[] {
-  for (const item of data) {
-    for (const [key, value] of Object.entries(item)) {
-      let processedValue = value
-      if (typeof value === 'object') {
-        processedValue = JSON.stringify(value)
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(item as { [key: string]: any })[key] = processedValue
-    }
-  }
-  return data
-}
-
-function parseObjects<T>(data: T[]): T[] {
-  for (const item of data) {
-    for (const [key, value] of Object.entries(item)) {
-      let processedValue = value
-      if (typeof value === 'string' && (value[0] === '{' || value[0] === '[')) {
-        processedValue = JSON.parse(value)
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(item as { [key: string]: any })[key] = processedValue
-    }
-  }
-  return data
+function getTableName(klass: Klass): string {
+  return toSnakeCase(klass.name)
 }
 
 type Args = {
@@ -196,11 +121,3 @@ type Args = {
 }
 
 type Filters = { [key: string]: string | number }
-
-// TODO: Make indexing explicit
-type ColumnMapping = {
-  key: string
-  columnName: string
-  columnSql: string
-  isIndexed: boolean
-}

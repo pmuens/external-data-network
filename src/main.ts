@@ -47,6 +47,11 @@ async function main() {
   const graphql = new GraphQL(server, db)
   const scheduler = new Scheduler()
 
+  db.add(cobraEvents)
+  db.add(oracleEvents)
+  graphql.add(cobraEvents)
+  graphql.add(oracleEvents)
+
   async function cobraEventWatcher() {
     const result = await cobraEvents.read()
     const processed = await db.write(cobraEvents, result)
@@ -60,7 +65,6 @@ async function main() {
 
   await cobras.transform(db, graphql)
 
-  graphql.add(cobraEvents)
   graphql.setup()
 
   scheduler.add(cobraEventWatcher, '*/5 * * * * *')

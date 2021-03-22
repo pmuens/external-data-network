@@ -1,8 +1,7 @@
-import { OutputTypeDef, Klass } from './types'
+import { Klass } from './types'
 
 export interface Source<Output> extends Klass {
   read<T>(args?: T): Promise<Output[]>
-  getOutputType(): OutputTypeDef
   getOutputExample(): Output
 }
 

@@ -2,16 +2,8 @@
 
 import { ethers } from 'ethers'
 
-import { OutputTypeDef } from '../host/types'
 import { Source } from '../host/interfaces'
 
-// NOTE: Keep these in sync
-const OutputType: OutputTypeDef = {
-  address: 'string',
-  event: 'string',
-  signature: 'string',
-  arguments: 'string[]'
-}
 export type Output = {
   address: string
   event: string
@@ -41,10 +33,6 @@ export class EthereumEvents implements Source<Output> {
       signature: 'MyEvent(address,uint8)',
       arguments: ['0x0123456789abcdef', '42']
     }
-  }
-
-  getOutputType(): OutputTypeDef {
-    return OutputType
   }
 
   async read(): Promise<Output[]> {
