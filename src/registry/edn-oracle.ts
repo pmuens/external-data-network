@@ -48,7 +48,7 @@ export class EdnOracle implements Transformer<EEOutput, ESCInput> {
       processed++
     }
 
-    sink.write(result)
+    await sink.write(result)
 
     return Promise.resolve(processed)
   }

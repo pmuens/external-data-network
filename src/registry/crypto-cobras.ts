@@ -51,7 +51,7 @@ export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInpu
 
     const data = [{ types, resolvers }]
 
-    graphql.write(data)
+    await graphql.write(data)
 
     transformed++
     return transformed

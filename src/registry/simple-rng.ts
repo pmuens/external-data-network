@@ -11,7 +11,7 @@ export class SimpleRng implements Source<Output> {
     return { value: 42 }
   }
 
-  read<T>(args: T & Args): Promise<Output[]> {
+  async read<T>(args: T & Args): Promise<Output[]> {
     const { min, max } = args
 
     const output: Output[] = [
