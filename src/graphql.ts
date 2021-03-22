@@ -1,73 +1,77 @@
-import { ApolloServer } from 'apollo-server-express'
 import { Express } from 'express'
-import { Server } from './server'
-import {
-  GraphQLBoolean,
-  GraphQLInt,
-  GraphQLList,
-  GraphQLObjectType,
-  GraphQLSchema,
-  GraphQLString,
-  GraphQLType
-} from 'graphql'
+import { ApolloServer } from 'apollo-server-express'
+import { DocumentNode, GraphQLSchema } from 'graphql'
+import { mergeTypeDefs, mergeResolvers } from '@graphql-tools/merge'
+import { jsonToSchema } from '@walmartlabs/json-to-simple-graphql-schema'
 
 import { DB } from './db'
-import { Klass, OutputTypeDef } from './types'
+import { Server } from './server'
+import { Klass } from './types'
 import { toPascalCase, toCamelCase } from './shared'
 import { Source, Sink } from './interfaces'
 
-export type Input = FieldConfig
+export type Input = {
+  types: string | DocumentNode | GraphQLSchema
+  resolvers: Resolvers
+}
 
 export class GraphQL implements Sink<Input> {
   private _db: DB<unknown>
   private _express: Express
-  private _fieldConfigs: FieldConfig[]
+  private _types: Array<string | DocumentNode | GraphQLSchema>
+  private _resolvers: Resolvers[]
 
   name = GraphQL.name
 
   constructor(server: Server, db: DB<unknown>) {
     this._db = db
     this._express = server.express
-    this._fieldConfigs = []
+    this._types = []
+    this._resolvers = []
   }
 
   async write(_: Klass, data: Input[]): Promise<number> {
-    const fieldConfigs = data
     let added = 0
-    for (const config of fieldConfigs) {
-      this._fieldConfigs.push(config)
+    for (const item of data) {
+      this._types.push(item.types)
+      this._resolvers.push(item.resolvers)
       added++
     }
     return added
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  add(source: Source<any>): void {
-    const name = getFieldName(source)
-    const mappings = getTypeMappings(source.getOutputType())
-    const type = getType(source, mappings)
-    const args = getArgs(mappings)
+  add(source: Source<unknown>): void {
+    const typeName = getTypeName(source)
+    const fieldName = getFieldName(source)
 
-    this._fieldConfigs.push({
-      name,
-      type: new GraphQLList(type),
-      args,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      resolve: (_, args) => this._db.read({ klass: source, filters: args as any })
-    })
+    const sourceTypes = getTypes(source)
+
+    const rootTypeName = 'Query'
+    let rootType = `type ${rootTypeName} { ${fieldName}: [${typeName}]}`
+    const params = getParams(source)
+    if (params.length) {
+      const expanded = params.map((param) => `${param.name}: ${param.type}`).join(', ')
+      rootType = `type ${rootTypeName} { ${fieldName}(${expanded}): [${typeName}]}`
+    }
+
+    const resolvers = {
+      [rootTypeName]: {
+        [fieldName]: (_: unknown, args: unknown) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return this._db.read({ klass: source, filters: args as any })
+        }
+      }
+    }
+
+    this._types.push(rootType)
+    this._types.push(sourceTypes)
+    this._resolvers.push(resolvers)
   }
 
   setup(): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fields = getFieldConfigMap(this._fieldConfigs) as any
-    const schema = new GraphQLSchema({
-      query: new GraphQLObjectType({
-        name: 'Query',
-        fields
-      })
-    })
-
-    const server = new ApolloServer({ schema })
+    const typeDefs = mergeTypeDefs(this._types)
+    const resolvers = mergeResolvers(this._resolvers)
+    const server = new ApolloServer({ typeDefs, resolvers })
     server.applyMiddleware({ app: this._express })
   }
 }
@@ -80,108 +84,70 @@ function getTypeName(klass: Klass): string {
   return toPascalCase(klass.name)
 }
 
-function getTypeMappings(type: OutputTypeDef): TypeMapping[] {
-  const result: TypeMapping[] = []
-  for (const [key, value] of Object.entries(type)) {
-    const typeName = toCamelCase(key)
-    if (value === 'string') {
-      result.push({
-        key,
-        typeName,
-        typeValue: GraphQLString
-      })
-    } else if (value === 'number') {
-      result.push({
-        key,
-        typeName,
-        typeValue: GraphQLInt
-      })
-    } else if (value === 'boolean') {
-      result.push({
-        key,
-        typeName,
-        typeValue: GraphQLBoolean
-      })
-    } else if (value.includes('[]')) {
-      if (value.startsWith('string')) {
-        result.push({
-          key,
-          typeName,
-          typeValue: new GraphQLList(GraphQLString)
-        })
-      } else if (value.startsWith('number')) {
-        result.push({
-          key,
-          typeName,
-          typeValue: new GraphQLList(GraphQLInt)
-        })
-      } else if (value.startsWith('boolean')) {
-        result.push({
-          key,
-          typeName,
-          typeValue: new GraphQLList(GraphQLBoolean)
-        })
-      }
+function getTypes(source: Source<unknown>): string {
+  const prefix = getTypeName(source)
+  const example = source.getOutputExample()
+
+  const { value } = jsonToSchema({ jsonInput: JSON.stringify(example) })
+
+  // Matches patterns like `type FooBar {`
+  const typeNameRegex = new RegExp('type ([A-Z]{1}.*)+\\s{', 'g')
+
+  let matched
+  let result = value
+  while ((matched = typeNameRegex.exec(result))) {
+    const oldTypeName = matched[1]
+
+    let newTypeName = prefix + oldTypeName
+    if (oldTypeName === 'AutogeneratedMainType') {
+      newTypeName = prefix
     }
+
+    const oldTypeNameRegex = new RegExp(`\\s${oldTypeName}\\s`, 'g')
+    result = result.replace(oldTypeNameRegex, ` ${newTypeName} `)
   }
+
   return result
 }
 
-function getFieldConfigMap(fields: FieldConfig[]): FieldConfigMap {
-  return fields.reduce((accum: FieldConfigMap, item) => {
-    const { type, args, resolve } = item as FieldConfig
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    accum[item.name!] = {
-      type,
-      args,
-      resolve
-    }
-    return accum
-  }, {})
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getType(source: Source<any>, mappings: TypeMapping[]): GraphQLObjectType {
-  const name = getTypeName(source)
+function getParams(source: Source<unknown>): Parameter[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fields: any = mappings.reduce((accum: FieldConfigMap, item) => {
-    accum[item.typeName] = {
-      type: item.typeValue
+  const example = source.getOutputExample() as any
+
+  const result: Parameter[] = []
+  for (const [key, value] of Object.entries(example)) {
+    if (typeof value === 'string') {
+      result.push({
+        name: key,
+        type: 'String'
+      })
+    } else if (typeof value === 'number' && Number.isInteger(value)) {
+      result.push({
+        name: key,
+        type: 'Int'
+      })
+    } else if (typeof value === 'number' && !Number.isInteger(value)) {
+      result.push({
+        name: key,
+        type: 'Float'
+      })
+    } else if (typeof value === 'boolean') {
+      result.push({
+        name: key,
+        type: 'Boolean'
+      })
     }
-    return accum
-  }, {})
-  return new GraphQLObjectType({ name, fields })
+  }
+
+  return result
 }
 
-function getArgs(mappings: TypeMapping[]): FieldConfigMap {
-  return mappings.reduce((accum: FieldConfigMap, item) => {
-    if (!(item.typeValue instanceof GraphQLList)) {
-      accum[item.typeName] = {
-        type: item.typeValue
-      }
-    }
-    return accum
-  }, {})
+type Parameter = {
+  name: string
+  type: 'String' | 'Int' | 'Float' | 'Boolean'
 }
 
-type FieldConfig = {
-  type: GraphQLType
-  name?: string
-  args?: unknown
-  resolve?: (
-    source: unknown,
-    args: unknown,
-    context: unknown,
-    info: unknown
-  ) => Promise<unknown> | unknown
-}
-
-type FieldConfigMap = {
-  [key: string]: FieldConfig
-}
-
-type TypeMapping = {
-  key: string
-  typeName: string
-  typeValue: GraphQLType
+type Resolvers = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }

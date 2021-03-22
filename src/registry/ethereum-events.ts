@@ -34,6 +34,15 @@ export class EthereumEvents implements Source<Output> {
     this._fromBlock = fromBlock
   }
 
+  getOutputExample(): Output {
+    return {
+      address: '0x0123456789abcdef',
+      event: 'MyEvent',
+      signature: 'MyEvent(address,uint8)',
+      arguments: ['0x0123456789abcdef', '42']
+    }
+  }
+
   getOutputType(): OutputTypeDef {
     return OutputType
   }

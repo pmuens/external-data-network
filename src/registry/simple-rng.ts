@@ -12,6 +12,14 @@ export type Output = {
 export class SimpleRng implements Source<Output> {
   name = SimpleRng.name
 
+  getOutputExample(): Output {
+    return { value: 42 }
+  }
+
+  getOutputType(): OutputTypeDef {
+    return OutputType
+  }
+
   read<T>(args: T & Args): Promise<Output[]> {
     const { min, max } = args
 
@@ -21,10 +29,6 @@ export class SimpleRng implements Source<Output> {
       }
     ]
     return Promise.resolve(output)
-  }
-
-  getOutputType(): OutputTypeDef {
-    return OutputType
   }
 }
 

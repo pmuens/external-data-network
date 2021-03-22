@@ -22,6 +22,13 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
     this._db = new Database(filePath)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getOutputExample(): Output<any> {
+    return {
+      arbitrary: 'value'
+    }
+  }
+
   // The `DB` as a `Source` is a special case since
   // the real `OutputTypeDef` varies during runtime
   // as we're able to query arbitrary data.
