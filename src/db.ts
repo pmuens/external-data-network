@@ -36,7 +36,8 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
   }
 
   async read<A>(args: A & Args): Promise<Output<T>[]> {
-    const { klass, filters } = args
+    const { klass, limit } = args
+    const filters = removeReservedKeys(args.filters)
 
     const values = []
     const name = getTableName(klass)
@@ -53,7 +54,9 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
       SQL += clauses.join(' AND ')
     }
 
-    SQL += ';'
+    SQL += ' LIMIT ?;'
+    values.push(limit)
+
     const SELECT_SQL = this._db.prepare(SQL)
     const result = SELECT_SQL.all(values)
     const data = result.map((item) => JSON.parse(item.data))
@@ -104,6 +107,16 @@ export class DB<T> implements Source<Output<T>>, Sink<Input> {
   }
 }
 
+function removeReservedKeys(filters: Filters): Filters {
+  const reserved = ['limit']
+
+  for (const key of Object.keys(filters)) {
+    if (reserved.includes(key)) delete filters[key]
+  }
+
+  return filters
+}
+
 function getOutputKeys<T>(source: Source<T>): string[] {
   const example = source.getOutputExample()
 
@@ -124,6 +137,7 @@ function getTableName(klass: Klass): string {
 type Args = {
   klass: Klass
   filters: Filters
+  limit: number
 }
 
 type Filters = { [key: string]: string | number }

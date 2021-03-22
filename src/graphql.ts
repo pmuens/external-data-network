@@ -61,19 +61,25 @@ export class GraphQL implements Sink<Input> {
 
     const sourceTypes = getTypes(source)
 
-    const rootTypeName = 'Query'
-    let rootType = `type ${rootTypeName} { ${fieldName}: [${typeName}]}`
-    const params = getParams(source)
-    if (params.length) {
-      const expanded = params.map((param) => `${param.name}: ${param.type}`).join(', ')
-      rootType = `type ${rootTypeName} { ${fieldName}(${expanded}): [${typeName}]}`
-    }
+    const defaultParams = getDefaultParams()
+    const sourceParams = getSourceParams(source)
+
+    const params = [...defaultParams, ...sourceParams]
+
+    const expanded = params.map((param) => `${param.name}: ${param.type}`).join(', ')
+    const rootType = `
+      type Query {
+        ${fieldName}(${expanded}): [${typeName}]
+      }
+    `
 
     const resolvers = {
-      [rootTypeName]: {
-        [fieldName]: (_: unknown, args: unknown) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return this._db.read({ klass: source, filters: args as any })
+      Query: {
+        [fieldName]: (_: unknown, args: ResolverArguments) => {
+          const klass = source
+          const filters = args
+          const limit = args.limit
+          return this._db.read({ klass, filters, limit })
         }
       }
     }
@@ -125,7 +131,18 @@ function getTypes(source: Source<unknown>): string {
   return result
 }
 
-function getParams(source: Source<unknown>): Parameter[] {
+function getDefaultParams(): Parameter[] {
+  const result: Parameter[] = []
+
+  result.push({
+    name: 'limit',
+    type: 'Int!'
+  })
+
+  return result
+}
+
+function getSourceParams(source: Source<unknown>): Parameter[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const example = source.getOutputExample() as any
 
@@ -159,7 +176,13 @@ function getParams(source: Source<unknown>): Parameter[] {
 
 type Parameter = {
   name: string
-  type: 'String' | 'Int' | 'Float' | 'Boolean'
+  type: 'String' | 'String!' | 'Int' | 'Int!' | 'Float' | 'Float!' | 'Boolean' | 'Boolean!'
+}
+
+type ResolverArguments = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filters: any
+  limit: number
 }
 
 type Resolvers = {

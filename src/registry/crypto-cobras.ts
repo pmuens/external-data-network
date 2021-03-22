@@ -23,7 +23,7 @@ export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInpu
       }
 
       type Query {
-        cryptoCobras(id: String): [CryptoCobra]
+        cryptoCobras(id: String, limit: Int!): [CryptoCobra]
       }
     `
 
@@ -33,8 +33,9 @@ export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInpu
         cryptoCobras: async (_: unknown, args: any) => {
           const klass = EthereumEvents
           const filters = { address: this._address }
+          const limit = args.limit
 
-          const cobras = await db.read({ klass, filters })
+          const cobras = await db.read({ klass, filters, limit })
           let result = cobras.map((item) => ({
             owner: item.arguments[0],
             id: item.arguments[1],
