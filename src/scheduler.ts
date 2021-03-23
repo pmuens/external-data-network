@@ -1,7 +1,5 @@
 import cron from 'node-cron'
 
-const { log } = console
-
 export class Scheduler {
   private _tasks: Task[]
 
@@ -15,7 +13,6 @@ export class Scheduler {
 
   start(): void {
     for (const task of this._tasks) {
-      log(`Starting task "${task.callback.name}"...`)
       cron.schedule(task.crontab, task.callback)
     }
   }
