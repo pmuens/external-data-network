@@ -1,7 +1,6 @@
 import { DB } from './db'
 import { GraphQL } from './graphql'
 import { loadModule } from './shared'
-import { Klass } from './types'
 import { Source, Sink, Transformer } from './interfaces'
 
 const { log } = console
@@ -12,7 +11,19 @@ export class Job {
 
   constructor(config: Config, singletons: Singletons) {
     const resolved = resolveJobConfig(config, singletons)
-    this._config = resolved.run
+    const { source, sink, run } = resolved
+
+    // Add the `Source` to the `Sink` if it's not a DB and the `Sink` is either DB or GraphQL
+    if (!(source instanceof DB) && (sink instanceof DB || sink instanceof GraphQL)) {
+      sink.add(source)
+    }
+
+    // Auto-generate a `Source`s GraphQL Schema for DB `Sink`s
+    if (sink instanceof DB) {
+      singletons.graphql.add(source)
+    }
+
+    this._config = run
     this._func = getFunction(resolved)
   }
 
@@ -36,10 +47,6 @@ export type Config = {
 
 function getFunction(config: ResolvedConfig): () => Promise<void> {
   const { name, logs, source, sink, transformer } = config
-
-  if (!(source instanceof DB) && (sink instanceof DB || sink instanceof GraphQL)) {
-    sink.add(source)
-  }
 
   return async function func() {
     let processed = 0
@@ -120,8 +127,8 @@ function getInstance(config: InterfaceConfig, singletons: Singletons) {
 }
 
 type Singletons = {
-  db: Klass
-  graphql: Klass
+  db: DB<unknown>
+  graphql: GraphQL
 }
 
 type InterfaceConfig = {
