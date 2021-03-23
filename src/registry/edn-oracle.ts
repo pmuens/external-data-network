@@ -1,5 +1,6 @@
 import { ethers } from 'ethers'
 
+import { loadModule } from '../host/utils'
 import { Transformer } from '../host/interfaces'
 import { EthereumEvents, Output as EEOutput } from './ethereum-events'
 import { EthereumSmartContract, Input as ESCInput } from './ethereum-smart-contract'
@@ -73,7 +74,7 @@ export class EdnOracle implements Transformer<EEOutput, ESCInput> {
 }
 
 async function runRandomJob(min: number, max: number): Promise<number> {
-  const rng = new SimpleRng()
+  const rng = loadModule<SimpleRng>('SimpleRng', [])
   const args = { min, max }
   const result = await rng.read(args)
   return result[0].value

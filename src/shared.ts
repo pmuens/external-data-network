@@ -1,6 +1,6 @@
 import { join } from 'path'
 
-export function loadModule<T>(name: string, args: unknown[]): new () => T {
+export function loadModule<T>(name: string, args: unknown[]): T {
   return loadFromRegistry(name, args)
 }
 
