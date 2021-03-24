@@ -56,7 +56,7 @@ function getFunction(config: ResolvedConfig): () => Promise<void> {
     }
 
     if (logs && processed > 0) {
-      log(`"${name}": Processed "${processed}" item(s)...`)
+      log(`[${name}]: Processed ${processed} item(s)`)
     }
   }
 }
