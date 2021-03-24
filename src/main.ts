@@ -4,6 +4,11 @@ import { DB, Server, GraphQL, Scheduler, Manager } from './classes'
 
 dotenv.config()
 
+process.on('unhandledRejection', function (err) {
+  // eslint-disable-next-line no-console
+  console.log(err)
+})
+
 const { SERVER_PORT } = process.env
 
 async function main() {
