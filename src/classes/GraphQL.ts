@@ -4,11 +4,11 @@ import { DocumentNode, GraphQLSchema } from 'graphql'
 import { mergeTypeDefs, mergeResolvers } from '@graphql-tools/merge'
 import { jsonToSchema } from '@walmartlabs/json-to-simple-graphql-schema'
 
-import { DB } from './db'
-import { Server } from './server'
-import { Klass } from './types'
-import { toPascalCase, toCamelCase } from './shared'
-import { Source, Sink } from './interfaces'
+import { DB } from './DB'
+import { Server } from './Server'
+import { Klass } from '../types'
+import { toPascalCase, toCamelCase } from '../shared'
+import { Source, Sink } from '../interfaces'
 
 export type Input = {
   types: string | DocumentNode | GraphQLSchema

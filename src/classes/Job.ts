@@ -1,8 +1,8 @@
-import { DB } from './db'
-import { GraphQL } from './graphql'
-import { loadModule } from './shared'
-import { Source, Sink, Transformer } from './interfaces'
-import { JobConfig, Singletons, InterfaceConfig, RunConfig, RunType } from './types'
+import { DB } from './DB'
+import { GraphQL } from './GraphQL'
+import { loadModule } from '../shared'
+import { Source, Sink, Transformer } from '../interfaces'
+import { JobConfig, Singletons, InterfaceConfig, RunConfig, RunType } from '../types'
 
 const { log } = console
 

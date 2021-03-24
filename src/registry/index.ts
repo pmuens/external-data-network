@@ -1,7 +1,7 @@
-import { CryptoCobras } from './crypto-cobras'
-import { EdnOracle } from './edn-oracle'
-import { EthereumEvents } from './ethereum-events'
-import { EthereumSmartContract } from './ethereum-smart-contract'
-import { SimpleRng } from './simple-rng'
+import { CryptoCobras } from './CryptoCobras'
+import { EdnOracle } from './EdnOracle'
+import { EthereumEvents } from './EthereumEvents'
+import { EthereumSmartContract } from './EthereumSmartContract'
+import { SimpleRng } from './SimpleRng'
 
 export { CryptoCobras, EdnOracle, EthereumSmartContract, EthereumEvents, SimpleRng }

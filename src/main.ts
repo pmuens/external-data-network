@@ -1,9 +1,6 @@
-import { DB } from './db'
-import { Server } from './server'
-import { GraphQL } from './graphql'
-import { Scheduler } from './scheduler'
-import { Manager } from './manager'
 import dotenv from 'dotenv'
+
+import { DB, Server, GraphQL, Scheduler, Manager } from './classes'
 
 dotenv.config()
 

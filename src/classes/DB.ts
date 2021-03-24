@@ -1,9 +1,9 @@
 import dotenv from 'dotenv'
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
-import { toSnakeCase } from './shared'
-import { Source, Sink } from './interfaces'
-import { Klass } from './types'
+import { toSnakeCase } from '../shared'
+import { Source, Sink } from '../interfaces'
+import { Klass } from '../types'
 
 dotenv.config()
 

@@ -1,5 +1,4 @@
-import { DB } from './db'
-import { GraphQL } from './graphql'
+import { DB, GraphQL } from './classes'
 
 export type Klass = {
   name: string

@@ -46,16 +46,13 @@ function toSeparatedCase(str: string, sep: string): string {
 }
 
 function loadModuleFromDevRegistry(name: string, args: unknown[]) {
-  const fileName = toDashedCase(name)
-  const registryPath = devRegistryPath
-  const modulePath = join(registryPath, fileName)
+  const modulePath = join(devRegistryPath, name)
   return createInstance(modulePath, name, args)
 }
 
 function loadModuleFromCoreRegistry(name: string, args: unknown[]) {
-  const fileName = toDashedCase(name)
   const registryPath = join(__dirname, 'registry')
-  const modulePath = join(registryPath, fileName)
+  const modulePath = join(registryPath, name)
   return createInstance(modulePath, name, args)
 }
 

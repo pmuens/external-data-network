@@ -1,7 +1,7 @@
-import { Singletons } from './types'
-import { Scheduler } from './scheduler'
-import { loadJobConfigs } from './shared'
-import { Job } from './job'
+import { Job } from './Job'
+import { Scheduler } from './Scheduler'
+import { loadJobConfigs } from '../shared'
+import { Singletons } from '../types'
 
 const { log } = console
 

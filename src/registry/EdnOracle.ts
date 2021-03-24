@@ -1,9 +1,9 @@
 import { ethers } from 'ethers'
 
 import { Transformer, loadModule } from '../host'
-import { EthereumEvents, Output as EEOutput } from './ethereum-events'
-import { EthereumSmartContract, Input as ESCInput } from './ethereum-smart-contract'
-import { SimpleRng } from './simple-rng'
+import { EthereumEvents, Output as EEOutput } from './EthereumEvents'
+import { EthereumSmartContract, Input as ESCInput } from './EthereumSmartContract'
+import { SimpleRng } from './SimpleRng'
 
 export class EdnOracle implements Transformer<EEOutput, ESCInput> {
   name = EdnOracle.name

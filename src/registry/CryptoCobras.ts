@@ -1,5 +1,5 @@
 import { Transformer, DBOutput, DB, GraphQL, GraphQLInput } from '../host'
-import { EthereumEvents, Output as EEOutput } from './ethereum-events'
+import { EthereumEvents, Output as EEOutput } from './EthereumEvents'
 
 export class CryptoCobras implements Transformer<DBOutput<EEOutput>, GraphQLInput> {
   private _address: string
