@@ -1,4 +1,4 @@
-import { Source } from '../host/interfaces'
+import { Source } from '../host'
 
 export type Output = {
   value: number

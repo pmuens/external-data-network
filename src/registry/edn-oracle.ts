@@ -1,7 +1,6 @@
 import { ethers } from 'ethers'
 
-import { loadModule } from '../host/utils'
-import { Transformer } from '../host/interfaces'
+import { Transformer, loadModule } from '../host'
 import { EthereumEvents, Output as EEOutput } from './ethereum-events'
 import { EthereumSmartContract, Input as ESCInput } from './ethereum-smart-contract'
 import { SimpleRng } from './simple-rng'

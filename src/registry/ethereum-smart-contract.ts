@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import { ethers } from 'ethers'
 
-import { Sink } from '../host/interfaces'
+import { Sink } from '../host'
 
 dotenv.config()
 
