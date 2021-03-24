@@ -46,7 +46,8 @@ function getFunction(config: ResolvedConfig): () => Promise<void> {
     if (!transformer) {
       const data = await source.read()
       if (destination instanceof DB) {
-        processed = await destination.write(data, source)
+        const args = { klass: source }
+        processed = await destination.write(data, args)
       } else {
         processed = await destination.write(data)
       }

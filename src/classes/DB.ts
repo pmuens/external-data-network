@@ -8,6 +8,7 @@ import { Input, Output } from '../types'
 dotenv.config()
 
 const { DB_FILE_PATH } = process.env
+
 export class DB implements Source, Destination {
   private _db: BetterSqlite3
 
@@ -27,7 +28,7 @@ export class DB implements Source, Destination {
     }
   }
 
-  async read<A>(args: A & Args): Promise<Output[]> {
+  async read<T>(args: T & ReadArguments): Promise<Output[]> {
     const { klass, limit, orderBy } = args
     const filters = removeReservedKeys(args.filters)
 
@@ -67,8 +68,8 @@ export class DB implements Source, Destination {
     return Promise.resolve(data)
   }
 
-  async write(data: Input[], source: Source): Promise<number> {
-    const name = getTableName(source)
+  async write<T>(data: Input[], args: T & WriteArguments): Promise<number> {
+    const name = getTableName(args.klass)
 
     const INSERT_SQL = this._db.prepare(`INSERT INTO ${name} (data) VALUES (json(?));`)
 
@@ -139,12 +140,17 @@ function getTableName(klass: Object): string {
   return toSnakeCase(name)
 }
 
-type Args = {
+type ReadArguments = {
   // eslint-disable-next-line @typescript-eslint/ban-types
   klass: Object
   filters: Filters
   limit: number
   orderBy?: OrderBy
+}
+
+type WriteArguments = {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  klass: Object
 }
 
 type Filters = { [key: string]: string | number }

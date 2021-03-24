@@ -6,7 +6,7 @@ export interface Source {
 }
 
 export interface Destination {
-  write(data: Input[], source?: Source): Promise<number>
+  write<T>(data: Input[], args?: T): Promise<number>
   getInputExample(): Input
 }
 
