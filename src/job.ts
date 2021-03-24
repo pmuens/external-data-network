@@ -54,7 +54,8 @@ function getFunction(config: ResolvedConfig): () => Promise<void> {
     if (!transformer) {
       const data = await source.read()
       if (sink instanceof DB) {
-        processed = await sink.write(data, source)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        processed = await sink.write(data as any[], source as Source<any>)
       } else {
         processed = await sink.write(data)
       }

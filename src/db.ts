@@ -10,7 +10,7 @@ dotenv.config()
 const { DB_FILE_PATH } = process.env
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Input = any
+export type Input = { [key: string]: any }
 export type Output<T> = T
 
 export class DB<T> implements Source<Output<T>>, Sink<Input> {
