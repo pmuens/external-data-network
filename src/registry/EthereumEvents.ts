@@ -18,6 +18,13 @@ export class EthereumEvents implements Source {
   private _fromBlock: number
 
   constructor(url: string, address: string, signature: string, fromBlock: number) {
+    signature = signature.trim()
+    if (signature.startsWith('event')) {
+      throw new Error(`The Ethereum event signature shouldn't start with "event" -> "${signature}"`)
+    } else if (signature.endsWith(';')) {
+      throw new Error(`The Ethereum event signature shouldn't end with ";" -> "${signature}"`)
+    }
+
     this._url = url
     this._address = address
     this._signature = signature
