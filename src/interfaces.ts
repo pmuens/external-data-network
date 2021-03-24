@@ -5,11 +5,11 @@ export interface Source<Output> extends Klass {
   getOutputExample(): Output
 }
 
-export interface Sink<Input> extends Klass {
+export interface Destination<Input> extends Klass {
   write(data: Input[], source?: Source<Input>): Promise<number>
   getInputExample(): Input
 }
 
 export interface Transformer<Output, Input> extends Klass {
-  transform(source: Source<Output>, sink: Sink<Input>): Promise<number>
+  transform(source: Source<Output>, destination: Destination<Input>): Promise<number>
 }

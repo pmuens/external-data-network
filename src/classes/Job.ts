@@ -1,7 +1,7 @@
 import { DB } from './DB'
 import { GraphQL } from './GraphQL'
 import { loadModule } from '../shared'
-import { Source, Sink, Transformer } from '../interfaces'
+import { Source, Destination, Transformer } from '../interfaces'
 import { JobConfig, Singletons, InterfaceConfig, RunConfig, RunType } from '../types'
 
 const { log } = console
@@ -12,15 +12,15 @@ export class Job {
 
   constructor(config: JobConfig, singletons: Singletons) {
     const resolved = resolveJobConfig(config, singletons)
-    const { source, sink, run } = resolved
+    const { source, destination, run } = resolved
 
-    // Add the `Source` to the `Sink` if it's not a DB and the `Sink` is either DB or GraphQL
-    if (!(source instanceof DB) && (sink instanceof DB || sink instanceof GraphQL)) {
-      sink.add(source)
+    // Add the `Source` to the `Destination` if it's not a DB and the `Destination` is either DB or GraphQL
+    if (!(source instanceof DB) && (destination instanceof DB || destination instanceof GraphQL)) {
+      destination.add(source)
     }
 
-    // Auto-generate a `Source`s GraphQL Schema for DB `Sink`s
-    if (sink instanceof DB) {
+    // Auto-generate a `Source`s GraphQL Schema for DB `Destination`s
+    if (destination instanceof DB) {
       singletons.graphql.add(source)
     }
 
@@ -38,21 +38,21 @@ export class Job {
 }
 
 function getFunction(config: ResolvedConfig): () => Promise<void> {
-  const { name, logs, source, sink, transformer } = config
+  const { name, logs, source, destination, transformer } = config
 
   return async function func() {
     let processed = 0
 
     if (!transformer) {
       const data = await source.read()
-      if (sink instanceof DB) {
+      if (destination instanceof DB) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        processed = await sink.write(data as any[], source as Source<any>)
+        processed = await destination.write(data as any[], source as Source<any>)
       } else {
-        processed = await sink.write(data)
+        processed = await destination.write(data)
       }
     } else {
-      processed = await transformer.transform(source, sink)
+      processed = await transformer.transform(source, destination)
     }
 
     if (logs && processed > 0) {
@@ -68,7 +68,7 @@ function resolveJobConfig(config: JobConfig, singletons: Singletons): ResolvedCo
   const run = resolveRunConfig(config.run)
 
   const source = getInstance(resolveInterfaceConfig(config.source), singletons)
-  const sink = getInstance(resolveInterfaceConfig(config.sink), singletons)
+  const destination = getInstance(resolveInterfaceConfig(config.destination), singletons)
   let transformer
   if (config.transformer) {
     transformer = getInstance(resolveInterfaceConfig(config.transformer), singletons)
@@ -79,7 +79,7 @@ function resolveJobConfig(config: JobConfig, singletons: Singletons): ResolvedCo
     logs,
     run,
     source,
-    sink,
+    destination,
     transformer
   }
 }
@@ -124,6 +124,6 @@ type ResolvedConfig = {
   logs: boolean
   run: RunConfig
   source: Source<unknown>
-  sink: Sink<unknown>
+  destination: Destination<unknown>
   transformer?: Transformer<unknown, unknown>
 }

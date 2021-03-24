@@ -8,14 +8,14 @@ import { DB } from './DB'
 import { Server } from './Server'
 import { Klass } from '../types'
 import { toPascalCase, toCamelCase } from '../shared'
-import { Source, Sink } from '../interfaces'
+import { Source, Destination } from '../interfaces'
 
 export type Input = {
   types: string | DocumentNode | GraphQLSchema
   resolvers: Resolvers
 }
 
-export class GraphQL implements Sink<Input> {
+export class GraphQL implements Destination<Input> {
   private _db: DB<unknown>
   private _express: Express
   private _types: Array<string | DocumentNode | GraphQLSchema>

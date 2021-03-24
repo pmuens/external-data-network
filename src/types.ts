@@ -13,7 +13,7 @@ export type JobConfig = {
   name: string
   run: RunType | RunConfig
   source: string | InterfaceConfig
-  sink: string | InterfaceConfig
+  destination: string | InterfaceConfig
   transformer?: string | InterfaceConfig
   logs?: boolean
 }

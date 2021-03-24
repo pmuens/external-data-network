@@ -8,7 +8,7 @@ import { SimpleRng } from './SimpleRng'
 export class EdnOracle implements Transformer<EEOutput, ESCInput> {
   name = EdnOracle.name
 
-  async transform(source: EthereumEvents, sink: EthereumSmartContract): Promise<number> {
+  async transform(source: EthereumEvents, destination: EthereumSmartContract): Promise<number> {
     const data = await source.read()
 
     let processed = 0
@@ -66,7 +66,7 @@ export class EdnOracle implements Transformer<EEOutput, ESCInput> {
       processed++
     }
 
-    await sink.write(inputs)
+    await destination.write(inputs)
 
     return Promise.resolve(processed)
   }

@@ -2,7 +2,7 @@ import dotenv from 'dotenv'
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { toSnakeCase } from '../shared'
-import { Source, Sink } from '../interfaces'
+import { Source, Destination } from '../interfaces'
 import { Klass } from '../types'
 
 dotenv.config()
@@ -13,7 +13,7 @@ const { DB_FILE_PATH } = process.env
 export type Input = { [key: string]: any }
 export type Output<T> = T
 
-export class DB<T> implements Source<Output<T>>, Sink<Input> {
+export class DB<T> implements Source<Output<T>>, Destination<Input> {
   private _db: BetterSqlite3
 
   name = DB.name

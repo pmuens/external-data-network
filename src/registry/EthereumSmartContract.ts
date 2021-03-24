@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import { ethers } from 'ethers'
 
-import { Sink } from '../host'
+import { Destination } from '../host'
 
 dotenv.config()
 
@@ -14,7 +14,7 @@ export type Input = {
   args: unknown[]
 }
 
-export class EthereumSmartContract implements Sink<Input> {
+export class EthereumSmartContract implements Destination<Input> {
   name = EthereumSmartContract.name
 
   getInputExample(): Input {
