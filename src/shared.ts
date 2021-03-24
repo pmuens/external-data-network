@@ -22,6 +22,14 @@ export function loadJobConfigs(): JobConfig[] {
   return loadJobConfigsFromEdnDir()
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function getClassName(klass: Object): string {
+  if (typeof klass === 'function') {
+    return klass.name
+  }
+  return klass.constructor.name
+}
+
 export function toPascalCase(str: string): string {
   return str[0].toLocaleUpperCase() + str.slice(1, str.length)
 }

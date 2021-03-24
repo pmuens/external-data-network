@@ -15,8 +15,6 @@ export type Input = {
 }
 
 export class EthereumSmartContract implements Destination {
-  name = EthereumSmartContract.name
-
   getInputExample(): Input {
     return {
       address: '0x0123456789abcdef',

@@ -5,8 +5,6 @@ export type Output = {
 }
 
 export class SimpleRng implements Source {
-  name = SimpleRng.name
-
   getOutputExample(): Output {
     return { value: 42 }
   }

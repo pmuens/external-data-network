@@ -1,15 +1,15 @@
-import { Klass, Input, Output } from './types'
+import { Input, Output } from './types'
 
-export interface Source extends Klass {
+export interface Source {
   read<T>(args?: T): Promise<Output[]>
   getOutputExample(): Output
 }
 
-export interface Destination extends Klass {
+export interface Destination {
   write(data: Input[], source?: Source): Promise<number>
   getInputExample(): Input
 }
 
-export interface Transformer extends Klass {
+export interface Transformer {
   transform(source: Source, destination: Destination): Promise<number>
 }

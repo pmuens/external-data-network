@@ -1,17 +1,15 @@
 import dotenv from 'dotenv'
 import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
-import { toSnakeCase } from '../shared'
+import { getClassName, toSnakeCase } from '../shared'
 import { Source, Destination } from '../interfaces'
-import { Klass, Input, Output } from '../types'
+import { Input, Output } from '../types'
 
 dotenv.config()
 
 const { DB_FILE_PATH } = process.env
 export class DB implements Source, Destination {
   private _db: BetterSqlite3
-
-  name = DB.name
 
   constructor(filePath: string = DB_FILE_PATH as string) {
     this._db = new Database(filePath)
@@ -135,12 +133,15 @@ function getOutputKeys(source: Source): string[] {
   return result
 }
 
-function getTableName(klass: Klass): string {
-  return toSnakeCase(klass.name)
+// eslint-disable-next-line @typescript-eslint/ban-types
+function getTableName(klass: Object): string {
+  const name = getClassName(klass)
+  return toSnakeCase(name)
 }
 
 type Args = {
-  klass: Klass
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  klass: Object
   filters: Filters
   limit: number
   orderBy?: OrderBy

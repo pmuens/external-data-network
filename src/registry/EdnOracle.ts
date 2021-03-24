@@ -6,8 +6,6 @@ import { EthereumSmartContract } from './EthereumSmartContract'
 import { SimpleRng } from './SimpleRng'
 
 export class EdnOracle implements Transformer {
-  name = EdnOracle.name
-
   async transform(source: EthereumEvents, destination: EthereumSmartContract): Promise<number> {
     const data = await source.read()
 

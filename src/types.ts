@@ -1,9 +1,5 @@
 import { DB, GraphQL } from './classes'
 
-export type Klass = {
-  name: string
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Input = { [key: string]: any }
 

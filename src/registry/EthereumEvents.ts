@@ -17,8 +17,6 @@ export class EthereumEvents implements Source {
   private _signature: string
   private _fromBlock: number
 
-  name = EthereumEvents.name
-
   constructor(url: string, address: string, signature: string, fromBlock: number) {
     this._url = url
     this._address = address

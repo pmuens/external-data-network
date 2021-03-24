@@ -6,8 +6,7 @@ import { jsonToSchema } from '@walmartlabs/json-to-simple-graphql-schema'
 
 import { DB } from './DB'
 import { Server } from './Server'
-import { Klass } from '../types'
-import { toPascalCase, toCamelCase } from '../shared'
+import { toPascalCase, toCamelCase, getClassName } from '../shared'
 import { Source, Destination } from '../interfaces'
 
 export type Input = {
@@ -20,8 +19,6 @@ export class GraphQL implements Destination {
   private _express: Express
   private _types: Array<string | DocumentNode | GraphQLSchema>
   private _resolvers: Resolvers[]
-
-  name = GraphQL.name
 
   constructor(server: Server, db: DB) {
     this._db = db
@@ -103,12 +100,16 @@ export class GraphQL implements Destination {
   }
 }
 
-function getFieldName(klass: Klass): string {
-  return toCamelCase(klass.name)
+// eslint-disable-next-line @typescript-eslint/ban-types
+function getFieldName(klass: Object): string {
+  const name = getClassName(klass)
+  return toCamelCase(name)
 }
 
-function getTypeName(klass: Klass): string {
-  return toPascalCase(klass.name)
+// eslint-disable-next-line @typescript-eslint/ban-types
+function getTypeName(klass: Object): string {
+  const name = getClassName(klass)
+  return toPascalCase(name)
 }
 
 function getTypes(source: Source): string {
