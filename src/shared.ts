@@ -1,17 +1,25 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+
 import fs from 'fs'
 import { join } from 'path'
+
+import { JobConfig } from './types'
 
 export function loadModule<T>(name: string, args: unknown[]): T {
   if (fs.existsSync(devRegistryPath)) {
     try {
-      return loadFromDevRegistry(name, args)
+      return loadModuleFromDevRegistry(name, args)
     } catch (e) {
       if (e.code !== 'MODULE_NOT_FOUND') {
         throw e
       }
     }
   }
-  return loadFromCoreRegistry(name, args)
+  return loadModuleFromCoreRegistry(name, args)
+}
+
+export function loadJobConfigs(): JobConfig[] {
+  return loadJobConfigsFromEdnDir()
 }
 
 export function toPascalCase(str: string): string {
@@ -37,14 +45,14 @@ function toSeparatedCase(str: string, sep: string): string {
   )
 }
 
-function loadFromDevRegistry(name: string, args: unknown[]) {
+function loadModuleFromDevRegistry(name: string, args: unknown[]) {
   const fileName = toDashedCase(name)
   const registryPath = devRegistryPath
   const modulePath = join(registryPath, fileName)
   return createInstance(modulePath, name, args)
 }
 
-function loadFromCoreRegistry(name: string, args: unknown[]) {
+function loadModuleFromCoreRegistry(name: string, args: unknown[]) {
   const fileName = toDashedCase(name)
   const registryPath = join(__dirname, 'registry')
   const modulePath = join(registryPath, fileName)
@@ -52,9 +60,15 @@ function loadFromCoreRegistry(name: string, args: unknown[]) {
 }
 
 function createInstance(path: string, name: string, args: unknown[]) {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Klass = require(path)[name]
   return new Klass(...args)
 }
 
-const devRegistryPath = join(process.cwd(), '.edn', 'registry')
+function loadJobConfigsFromEdnDir(): JobConfig[] {
+  const jobsFilePath = join(dotEdnDirPath, 'jobs')
+  return require(jobsFilePath)
+}
+
+const dotEdnDirPath = join(process.cwd(), '.edn')
+
+const devRegistryPath = join(dotEdnDirPath, 'registry')

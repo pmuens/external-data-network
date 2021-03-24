@@ -2,6 +2,7 @@ import { DB } from './db'
 import { GraphQL } from './graphql'
 import { loadModule } from './shared'
 import { Source, Sink, Transformer } from './interfaces'
+import { JobConfig, Singletons, InterfaceConfig, RunConfig, RunType } from './types'
 
 const { log } = console
 
@@ -9,7 +10,7 @@ export class Job {
   private _config: RunConfig
   private _func: () => Promise<void>
 
-  constructor(config: Config, singletons: Singletons) {
+  constructor(config: JobConfig, singletons: Singletons) {
     const resolved = resolveJobConfig(config, singletons)
     const { source, sink, run } = resolved
 
@@ -36,15 +37,6 @@ export class Job {
   }
 }
 
-export type Config = {
-  name: string
-  run: RunType | RunConfig
-  source: string | InterfaceConfig
-  sink: string | InterfaceConfig
-  transformer?: string | InterfaceConfig
-  logs?: boolean
-}
-
 function getFunction(config: ResolvedConfig): () => Promise<void> {
   const { name, logs, source, sink, transformer } = config
 
@@ -69,7 +61,7 @@ function getFunction(config: ResolvedConfig): () => Promise<void> {
   }
 }
 
-function resolveJobConfig(config: Config, singletons: Singletons): ResolvedConfig {
+function resolveJobConfig(config: JobConfig, singletons: Singletons): ResolvedConfig {
   const { name } = config
   const logs = config.logs || false
 
@@ -126,23 +118,6 @@ function getInstance(config: InterfaceConfig, singletons: Singletons) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return loadModule(config.name, config.args) as any
 }
-
-type Singletons = {
-  db: DB<unknown>
-  graphql: GraphQL
-}
-
-type InterfaceConfig = {
-  name: string
-  args: unknown[]
-}
-
-type RunConfig = {
-  type: RunType
-  args: unknown[]
-}
-
-type RunType = 'schedule' | 'startup'
 
 type ResolvedConfig = {
   name: string
