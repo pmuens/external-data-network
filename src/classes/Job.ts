@@ -46,8 +46,7 @@ function getFunction(config: ResolvedConfig): () => Promise<void> {
     if (!transformer) {
       const data = await source.read()
       if (destination instanceof DB) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        processed = await destination.write(data as any[], source as Source<any>)
+        processed = await destination.write(data, source)
       } else {
         processed = await destination.write(data)
       }
@@ -123,7 +122,7 @@ type ResolvedConfig = {
   name: string
   logs: boolean
   run: RunConfig
-  source: Source<unknown>
-  destination: Destination<unknown>
-  transformer?: Transformer<unknown, unknown>
+  source: Source
+  destination: Destination
+  transformer?: Transformer
 }

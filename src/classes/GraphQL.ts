@@ -15,15 +15,15 @@ export type Input = {
   resolvers: Resolvers
 }
 
-export class GraphQL implements Destination<Input> {
-  private _db: DB<unknown>
+export class GraphQL implements Destination {
+  private _db: DB
   private _express: Express
   private _types: Array<string | DocumentNode | GraphQLSchema>
   private _resolvers: Resolvers[]
 
   name = GraphQL.name
 
-  constructor(server: Server, db: DB<unknown>) {
+  constructor(server: Server, db: DB) {
     this._db = db
     this._express = server.express
     this._types = []
@@ -55,7 +55,7 @@ export class GraphQL implements Destination<Input> {
     return added
   }
 
-  add(source: Source<unknown>): void {
+  add(source: Source): void {
     const typeName = getTypeName(source)
     const fieldName = getFieldName(source)
 
@@ -111,7 +111,7 @@ function getTypeName(klass: Klass): string {
   return toPascalCase(klass.name)
 }
 
-function getTypes(source: Source<unknown>): string {
+function getTypes(source: Source): string {
   const prefix = getTypeName(source)
   const example = source.getOutputExample()
 
@@ -148,9 +148,8 @@ function getDefaultParams(): Parameter[] {
   return result
 }
 
-function getSourceParams(source: Source<unknown>): Parameter[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const example = source.getOutputExample() as any
+function getSourceParams(source: Source): Parameter[] {
+  const example = source.getOutputExample()
 
   const result: Parameter[] = []
   for (const [key, value] of Object.entries(example)) {

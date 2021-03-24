@@ -3,17 +3,12 @@ import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { toSnakeCase } from '../shared'
 import { Source, Destination } from '../interfaces'
-import { Klass } from '../types'
+import { Klass, Input, Output } from '../types'
 
 dotenv.config()
 
 const { DB_FILE_PATH } = process.env
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Input = { [key: string]: any }
-export type Output<T> = T
-
-export class DB<T> implements Source<Output<T>>, Destination<Input> {
+export class DB implements Source, Destination {
   private _db: BetterSqlite3
 
   name = DB.name
@@ -28,14 +23,13 @@ export class DB<T> implements Source<Output<T>>, Destination<Input> {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getOutputExample(): Output<any> {
+  getOutputExample(): Output {
     return {
       arbitrary: 'value'
     }
   }
 
-  async read<A>(args: A & Args): Promise<Output<T>[]> {
+  async read<A>(args: A & Args): Promise<Output[]> {
     const { klass, limit, orderBy } = args
     const filters = removeReservedKeys(args.filters)
 
@@ -75,7 +69,7 @@ export class DB<T> implements Source<Output<T>>, Destination<Input> {
     return Promise.resolve(data)
   }
 
-  async write(data: Input[], source: Source<Input>): Promise<number> {
+  async write(data: Input[], source: Source): Promise<number> {
     const name = getTableName(source)
 
     const INSERT_SQL = this._db.prepare(`INSERT INTO ${name} (data) VALUES (json(?));`)
@@ -91,7 +85,7 @@ export class DB<T> implements Source<Output<T>>, Destination<Input> {
     return Promise.resolve(inserted)
   }
 
-  add(source: Source<unknown>): void {
+  add(source: Source): void {
     const name = getTableName(source)
     const keys = getOutputKeys(source)
 
@@ -128,7 +122,7 @@ function removeReservedKeys(filters: Filters): Filters {
   return filters
 }
 
-function getOutputKeys<T>(source: Source<T>): string[] {
+function getOutputKeys(source: Source): string[] {
   const example = source.getOutputExample()
 
   const result = []

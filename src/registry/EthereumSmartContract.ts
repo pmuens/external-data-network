@@ -14,7 +14,7 @@ export type Input = {
   args: unknown[]
 }
 
-export class EthereumSmartContract implements Destination<Input> {
+export class EthereumSmartContract implements Destination {
   name = EthereumSmartContract.name
 
   getInputExample(): Input {

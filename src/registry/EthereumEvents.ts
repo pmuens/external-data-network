@@ -11,7 +11,7 @@ export type Output = {
   arguments: string[]
 }
 
-export class EthereumEvents implements Source<Output> {
+export class EthereumEvents implements Source {
   private _url: string
   private _address: string
   private _signature: string

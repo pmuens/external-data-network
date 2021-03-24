@@ -1,11 +1,11 @@
 import { ethers } from 'ethers'
 
 import { Transformer, loadModule } from '../host'
-import { EthereumEvents, Output as EEOutput } from './EthereumEvents'
-import { EthereumSmartContract, Input as ESCInput } from './EthereumSmartContract'
+import { EthereumEvents } from './EthereumEvents'
+import { EthereumSmartContract } from './EthereumSmartContract'
 import { SimpleRng } from './SimpleRng'
 
-export class EdnOracle implements Transformer<EEOutput, ESCInput> {
+export class EdnOracle implements Transformer {
   name = EdnOracle.name
 
   async transform(source: EthereumEvents, destination: EthereumSmartContract): Promise<number> {

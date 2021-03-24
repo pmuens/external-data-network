@@ -4,7 +4,7 @@ export type Output = {
   value: number
 }
 
-export class SimpleRng implements Source<Output> {
+export class SimpleRng implements Source {
   name = SimpleRng.name
 
   getOutputExample(): Output {
