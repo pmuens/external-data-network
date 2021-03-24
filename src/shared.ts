@@ -1,7 +1,17 @@
+import fs from 'fs'
 import { join } from 'path'
 
 export function loadModule<T>(name: string, args: unknown[]): T {
-  return loadFromRegistry(name, args)
+  if (fs.existsSync(devRegistryPath)) {
+    try {
+      return loadFromDevRegistry(name, args)
+    } catch (e) {
+      if (e.code !== 'MODULE_NOT_FOUND') {
+        throw e
+      }
+    }
+  }
+  return loadFromCoreRegistry(name, args)
 }
 
 export function toPascalCase(str: string): string {
@@ -27,7 +37,14 @@ function toSeparatedCase(str: string, sep: string): string {
   )
 }
 
-function loadFromRegistry(name: string, args: unknown[]) {
+function loadFromDevRegistry(name: string, args: unknown[]) {
+  const fileName = toDashedCase(name)
+  const registryPath = devRegistryPath
+  const modulePath = join(registryPath, fileName)
+  return createInstance(modulePath, name, args)
+}
+
+function loadFromCoreRegistry(name: string, args: unknown[]) {
   const fileName = toDashedCase(name)
   const registryPath = join(__dirname, 'registry')
   const modulePath = join(registryPath, fileName)
@@ -39,3 +56,5 @@ function createInstance(path: string, name: string, args: unknown[]) {
   const Klass = require(path)[name]
   return new Klass(...args)
 }
+
+const devRegistryPath = join(process.cwd(), '.edn', 'registry')
