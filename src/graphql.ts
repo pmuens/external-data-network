@@ -90,6 +90,12 @@ export class GraphQL implements Sink<Input> {
   }
 
   setup(): void {
+    // Default to the `Input` example if no types are given
+    if (this._types.length === 0) {
+      const { types, resolvers } = this.getInputExample()
+      this._types.push(types)
+      this._resolvers.push(resolvers)
+    }
     const typeDefs = mergeTypeDefs(this._types)
     const resolvers = mergeResolvers(this._resolvers)
     const server = new ApolloServer({ typeDefs, resolvers })
