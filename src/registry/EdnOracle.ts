@@ -71,8 +71,7 @@ export class EdnOracle implements Transformer {
 }
 
 async function runRandomJob(min: number, max: number): Promise<number> {
-  const rng = loadModule<SimpleRng>('SimpleRng', [])
-  const args = { min, max }
-  const result = await rng.read(args)
+  const rng = loadModule<SimpleRng>('SimpleRng', [min, max])
+  const result = await rng.read()
   return result[0].value
 }
