@@ -7,12 +7,10 @@ import { Input, Output } from '../types'
 
 dotenv.config()
 
-const { DB_FILE_PATH } = process.env
-
 export class DB implements Source, Destination {
   private _db: BetterSqlite3
 
-  constructor(filePath: string = DB_FILE_PATH as string) {
+  constructor(filePath: string = process.env.DB_FILE_PATH as string) {
     this._db = new Database(filePath)
   }
 

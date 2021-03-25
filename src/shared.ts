@@ -6,6 +6,8 @@ import { join } from 'path'
 import { JobConfig } from './types'
 
 export function loadModule<T>(name: string, args: unknown[]): T {
+  const devRegistryPath = getDevRegistryPath()
+
   if (fs.existsSync(devRegistryPath)) {
     try {
       return loadModuleFromDevRegistry(name, args)
@@ -15,6 +17,7 @@ export function loadModule<T>(name: string, args: unknown[]): T {
       }
     }
   }
+
   return loadModuleFromCoreRegistry(name, args)
 }
 
@@ -54,6 +57,7 @@ function toSeparatedCase(str: string, sep: string): string {
 }
 
 function loadModuleFromDevRegistry(name: string, args: unknown[]) {
+  const devRegistryPath = getDevRegistryPath()
   const modulePath = join(devRegistryPath, name)
   return createInstance(modulePath, name, args)
 }
@@ -70,10 +74,16 @@ function createInstance(path: string, name: string, args: unknown[]) {
 }
 
 function loadJobConfigsFromEdnDir(): JobConfig[] {
+  const dotEdnDirPath = getDotEdnDirPath()
   const jobsFilePath = join(dotEdnDirPath, 'jobs')
   return require(jobsFilePath)
 }
 
-const dotEdnDirPath = join(process.cwd(), '.edn')
+function getDotEdnDirPath(): string {
+  return join(process.cwd(), '.edn')
+}
 
-const devRegistryPath = join(dotEdnDirPath, 'registry')
+function getDevRegistryPath(): string {
+  const dotEdnDirPath = getDotEdnDirPath()
+  return join(dotEdnDirPath, 'registry')
+}

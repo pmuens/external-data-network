@@ -3,6 +3,8 @@ tmp/
 *.db
 *.csv
 
+!src/tests/.edn/
+
 # Created by https://www.toptal.com/developers/gitignore/api/linux,macos,windows,vim,emacs,sublimetext,code,intellij+all,node
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,macos,windows,vim,emacs,sublimetext,code,intellij+all,node
 
