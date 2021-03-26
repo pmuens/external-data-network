@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn src/main.ts",
     "test": "jest",
+    "coverage": "jest --coverage",
     "format": "prettier --write .",
     "clean": "rm -rf dist",
     "build": "run-s clean build:typescript",
