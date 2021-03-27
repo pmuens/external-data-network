@@ -66,7 +66,7 @@ export class EdnOracle implements Transformer {
 
     await destination.write(inputs)
 
-    return Promise.resolve(processed)
+    return processed
   }
 }
 

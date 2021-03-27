@@ -63,7 +63,7 @@ export class DB implements Source, Destination {
     const result = SELECT_SQL.all(values)
     const data = result.map((item) => JSON.parse(item.data))
 
-    return Promise.resolve(data)
+    return data
   }
 
   async write<T>(data: Input[], args: T & WriteArguments): Promise<number> {
@@ -79,7 +79,7 @@ export class DB implements Source, Destination {
       }
     })(data)
 
-    return Promise.resolve(inserted)
+    return inserted
   }
 
   add(source: Source): void {

@@ -70,6 +70,6 @@ export class EthereumEvents implements Source {
 
     this._fromBlock = maxBlockNumber
 
-    return Promise.resolve(result)
+    return result
   }
 }

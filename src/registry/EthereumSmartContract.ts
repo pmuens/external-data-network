@@ -50,7 +50,7 @@ export class EthereumSmartContract implements Destination {
       processed++
     }
 
-    return Promise.resolve(processed)
+    return processed
   }
 }
 

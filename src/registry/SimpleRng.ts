@@ -21,12 +21,10 @@ export class SimpleRng implements Source {
     const min = this._min
     const max = this._max
 
-    const output: Output[] = [
+    return [
       {
         value: Math.floor(Math.random() * (max - min + 1) + min)
       }
     ]
-
-    return Promise.resolve(output)
   }
 }
