@@ -1,7 +1,11 @@
+import fetch from 'node-fetch'
 import { Express } from 'express'
 import { ApolloServer } from 'apollo-server-express'
-import { DocumentNode, GraphQLSchema } from 'graphql'
-import { mergeTypeDefs, mergeResolvers } from '@graphql-tools/merge'
+import { mergeTypeDefs } from '@graphql-tools/merge'
+import { stitchSchemas } from '@graphql-tools/stitch'
+import { introspectSchema } from '@graphql-tools/wrap'
+import { makeExecutableSchema } from '@graphql-tools/schema'
+import { DocumentNode, GraphQLSchema, print } from 'graphql'
 import { jsonToSchema } from '@walmartlabs/json-to-simple-graphql-schema'
 
 import { DB } from './DB'
@@ -17,14 +21,15 @@ export type Input = {
 export class GraphQL implements Destination {
   private _db: DB
   private _express: Express
-  private _types: Array<string | DocumentNode | GraphQLSchema>
-  private _resolvers: Resolvers[]
+  private _apollo: ApolloServer | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _subschemas: any[]
 
   constructor(server: Server, db: DB) {
     this._db = db
     this._express = server.express
-    this._types = []
-    this._resolvers = []
+    this._apollo = null
+    this._subschemas = []
   }
 
   getInputExample(): Input {
@@ -45,8 +50,10 @@ export class GraphQL implements Destination {
   async write(data: Input[]): Promise<number> {
     let added = 0
     for (const item of data) {
-      this._types.push(item.types)
-      this._resolvers.push(item.resolvers)
+      const { types, resolvers } = item
+      const typeDefs = mergeTypeDefs([types])
+      const schema = makeExecutableSchema({ typeDefs, resolvers })
+      this._subschemas.push({ schema })
       added++
     }
     return added
@@ -81,22 +88,59 @@ export class GraphQL implements Destination {
       }
     }
 
-    this._types.push(rootType)
-    this._types.push(sourceTypes)
-    this._resolvers.push(resolvers)
+    const typeDefs = mergeTypeDefs([rootType, sourceTypes])
+    const schema = makeExecutableSchema({ typeDefs, resolvers })
+    this._subschemas.push({ schema })
+  }
+
+  async register(endpoint: string): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async function executor(args: { [key: string]: any }) {
+      const { document, variables } = args
+      const query = print(document)
+      const result = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables })
+      })
+      return result.json()
+    }
+
+    // IMPORTANT: This MUST be `unshift` so that local `resolvers` always
+    // have higher priority than remote `executors` with the same name!
+    this._subschemas.unshift({
+      schema: await introspectSchema(executor),
+      executor
+    })
   }
 
   setup(): void {
     // Default to the `Input` example if no types are given
-    if (this._types.length === 0) {
+    if (this._subschemas.length === 0) {
       const { types, resolvers } = this.getInputExample()
-      this._types.push(types)
-      this._resolvers.push(resolvers)
+      const typeDefs = mergeTypeDefs([types])
+      const schema = makeExecutableSchema({ typeDefs, resolvers })
+      this._subschemas.push({ schema })
     }
-    const typeDefs = mergeTypeDefs(this._types)
-    const resolvers = mergeResolvers(this._resolvers)
-    const server = new ApolloServer({ typeDefs, resolvers })
-    server.applyMiddleware({ app: this._express })
+
+    const schema = stitchSchemas({ subschemas: this._subschemas })
+
+    this._apollo = new ApolloServer({ schema })
+    this._apollo.applyMiddleware({ app: this._express })
+  }
+
+  // Adaption of: https://github.com/apollographql/apollo-server/issues/1275#issuecomment-532183702
+  async reload(): Promise<void> {
+    const schema = stitchSchemas({ subschemas: this._subschemas })
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const schemaDerivedData = await this._apollo.generateSchemaDerivedData(schema)
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    this._apollo.schema = schema
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    this._apollo.schemaDerivedData = schemaDerivedData
   }
 }
 
