@@ -26,7 +26,7 @@ async function main() {
 
   const scheduler = new Scheduler()
   const manager = new Manager(ctx, scheduler)
-  const networking = new Networking(host, p2p_port, p2p_bootstrap_multiaddr)
+  const networking = new Networking(ctx, host, p2p_port, p2p_bootstrap_multiaddr)
 
   await networking.setup()
   await manager.setup()

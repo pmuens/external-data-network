@@ -11,6 +11,10 @@ export class Server {
     this._express = express()
   }
 
+  get port(): number {
+    return this._port
+  }
+
   get express(): Express {
     return this._express
   }
