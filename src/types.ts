@@ -1,4 +1,4 @@
-import { DB, Server, GraphQL } from './classes'
+import { DB, Server, GraphQL, Scheduler } from './classes'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Input = { [key: string]: any }
@@ -10,6 +10,7 @@ export type Context = {
   db: DB
   server: Server
   graphql: GraphQL
+  scheduler: Scheduler
 }
 
 export type JobConfig = {

@@ -42,11 +42,11 @@ describe('Module Integration Test', () => {
     const db = new DB()
     const server = new Server(port)
     const graphql = new GraphQL(server, db)
-
-    const ctx: Context = { db, server, graphql }
-
     const scheduler = new Scheduler()
-    const manager = new Manager(ctx, scheduler)
+
+    const ctx: Context = { db, server, graphql, scheduler }
+
+    const manager = new Manager(ctx)
 
     await manager.setup()
 

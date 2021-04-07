@@ -21,11 +21,11 @@ async function main() {
   const db = new DB()
   const server = new Server(serverPort)
   const graphql = new GraphQL(server, db)
-
-  const ctx: Context = { db, server, graphql }
-
   const scheduler = new Scheduler()
-  const manager = new Manager(ctx, scheduler)
+
+  const ctx: Context = { db, server, graphql, scheduler }
+
+  const manager = new Manager(ctx)
   const networking = new Networking(ctx, host, p2pPort, bootstrapMultiaddr)
 
   await networking.setup()
