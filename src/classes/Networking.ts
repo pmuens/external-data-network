@@ -3,7 +3,7 @@ import MPLEX from 'libp2p-mplex'
 import { NOISE } from 'libp2p-noise'
 import TCP from 'libp2p-tcp'
 import MulticastDNS from 'libp2p-mdns'
-import Boostrap from 'libp2p-bootstrap'
+import Bootstrap from 'libp2p-bootstrap'
 
 import { Context } from '../types'
 
@@ -37,7 +37,7 @@ export class Networking {
         streamMuxer: [MPLEX],
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        peerDiscovery: [MulticastDNS, Boostrap]
+        peerDiscovery: [MulticastDNS, Bootstrap]
       },
       config: {
         peerDiscovery: {
@@ -46,7 +46,7 @@ export class Networking {
             enabled: true,
             interval: 1000
           },
-          [Boostrap.tag]: {
+          [Bootstrap.tag]: {
             enabled: true,
             interval: 2000,
             list: this._bootstrap_addrs
