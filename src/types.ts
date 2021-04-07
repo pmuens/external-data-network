@@ -1,4 +1,4 @@
-import { DB, GraphQL } from './classes'
+import { DB, Server, GraphQL } from './classes'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Input = { [key: string]: any }
@@ -6,8 +6,9 @@ export type Input = { [key: string]: any }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Output = { [key: string]: any }
 
-export type Singletons = {
+export type Context = {
   db: DB
+  server: Server
   graphql: GraphQL
 }
 

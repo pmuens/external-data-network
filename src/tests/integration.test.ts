@@ -2,6 +2,7 @@ import os from 'os'
 import fs from 'fs-extra'
 import path from 'path'
 
+import { Context } from '../../src/types'
 import { DB, GraphQL, Manager, Scheduler, Server } from '../../src/classes'
 
 describe('Module Integration Test', () => {
@@ -41,8 +42,11 @@ describe('Module Integration Test', () => {
     const db = new DB()
     const server = new Server(port)
     const graphql = new GraphQL(server, db)
+
+    const ctx: Context = { db, server, graphql }
+
     const scheduler = new Scheduler()
-    const manager = new Manager(scheduler, { db, graphql })
+    const manager = new Manager(ctx, scheduler)
 
     await manager.setup()
 

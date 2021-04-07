@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 
+import { Context } from './types'
 import { DB, Server, GraphQL, Scheduler, Manager, Networking } from './classes'
 
 dotenv.config()
@@ -20,8 +21,11 @@ async function main() {
   const db = new DB()
   const server = new Server(server_port)
   const graphql = new GraphQL(server, db)
+
+  const ctx: Context = { db, server, graphql }
+
   const scheduler = new Scheduler()
-  const manager = new Manager(scheduler, { db, graphql })
+  const manager = new Manager(ctx, scheduler)
   const networking = new Networking(host, p2p_port, p2p_bootstrap_multiaddr)
 
   await networking.setup()

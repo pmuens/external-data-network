@@ -1,17 +1,17 @@
 import { Job } from './Job'
 import { Scheduler } from './Scheduler'
 import { loadJobConfigs } from '../shared'
-import { Singletons } from '../types'
+import { Context } from '../types'
 
 const { log } = console
 
 export class Manager {
+  private _ctx: Context
   private _scheduler: Scheduler
-  private _singletons: Singletons
 
-  constructor(scheduler: Scheduler, singletons: Singletons) {
+  constructor(ctx: Context, scheduler: Scheduler) {
+    this._ctx = ctx
     this._scheduler = scheduler
-    this._singletons = singletons
   }
 
   async setup(): Promise<void> {
@@ -19,7 +19,7 @@ export class Manager {
 
     for (const config of configs) {
       const { name } = config
-      const job = new Job(config, this._singletons)
+      const job = new Job(this._ctx, config)
 
       const func = job.getFunc()
       const { type, args } = job.getConfig()
