@@ -23,6 +23,7 @@ describe('Module Integration Test', () => {
     const dbFilePath = path.join(tmpDirPath, 'app.db')
     resultFilePath = path.join(tmpDirPath, resultFileName)
     // Set environment variables
+    process.env.SERVER_PORT = '5000'
     process.env.TMP_DIR_PATH = tmpDirPath
     process.env.RESULT_FILE_NAME = resultFileName
     process.env.DB_FILE_PATH = dbFilePath
@@ -37,12 +38,10 @@ describe('Module Integration Test', () => {
   })
 
   it('should run the jobs defined in the config file', async () => {
-    const port = 5000
-
     const db = new DB()
-    const server = new Server(port)
-    const graphql = new GraphQL(server, db)
+    const server = new Server()
     const scheduler = new Scheduler()
+    const graphql = new GraphQL(server, db)
 
     const ctx: Context = { db, server, graphql, scheduler }
 

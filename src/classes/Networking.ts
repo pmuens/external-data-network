@@ -1,3 +1,4 @@
+import dotenv from 'dotenv'
 import Libp2p from 'libp2p'
 import MPLEX from 'libp2p-mplex'
 import { NOISE } from 'libp2p-noise'
@@ -9,6 +10,8 @@ import { Context } from '../types'
 
 const { log } = console
 
+dotenv.config()
+
 export class Networking {
   private _ctx: Context
   private _host: string
@@ -16,10 +19,11 @@ export class Networking {
   private _bootstrap_addrs: string[]
   private _node: Libp2p | null
 
-  constructor(ctx: Context, host: string, port: number, addr: string) {
+  constructor(ctx: Context) {
+    const addr = process.env.P2P_BOOTSTRAP_MULTIADDR as string
     this._ctx = ctx
-    this._host = host
-    this._port = port
+    this._host = process.env.HOST as string
+    this._port = parseFloat(process.env.P2P_PORT as string)
     this._bootstrap_addrs = [addr]
     this._node = null
   }

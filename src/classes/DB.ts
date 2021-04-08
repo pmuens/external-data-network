@@ -10,7 +10,8 @@ dotenv.config()
 export class DB implements Source, Destination {
   private _db: BetterSqlite3
 
-  constructor(filePath: string = process.env.DB_FILE_PATH as string) {
+  constructor() {
+    const filePath = process.env.DB_FILE_PATH as string
     this._db = new Database(filePath)
   }
 

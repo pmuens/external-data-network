@@ -1,13 +1,16 @@
+import dotenv from 'dotenv'
 import express, { Express } from 'express'
 
 const { log } = console
+
+dotenv.config()
 
 export class Server {
   private _port: number
   private _express: Express
 
-  constructor(port: number) {
-    this._port = port
+  constructor() {
+    this._port = parseFloat(process.env.SERVER_PORT as string)
     this._express = express()
   }
 
