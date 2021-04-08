@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 import fs from 'fs'
+import crypto from 'crypto'
 import { join } from 'path'
 
 import { JobConfig } from './types'
@@ -47,6 +48,11 @@ export function toSnakeCase(str: string): string {
 
 export function toDashedCase(str: string): string {
   return toSeparatedCase(str, '-')
+}
+
+// Adaption of: https://stackoverflow.com/a/27747377
+export function getRandomId(): string {
+  return crypto.randomBytes(20).toString('hex')
 }
 
 function toSeparatedCase(str: string, sep: string): string {

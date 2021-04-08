@@ -72,25 +72,36 @@ export class Networking {
 
     node.connectionManager.on('peer:connect', async (connection) => {
       log(`Connected to ${connection.remotePeer.toB58String()}`)
-      await this._registerGraphQlEndpoint(connection)
+      await this._registerGraphQlServer(connection)
+    })
+
+    node.connectionManager.on('peer:disconnect', async (connection) => {
+      log(`Disconnected from ${connection.remotePeer.toB58String()}`)
+      await this._deregisterGraphQlServer(connection)
     })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async _registerGraphQlEndpoint(connection: any) {
-    // TODO: Make `port` optional
-    // TODO: Make `protocol` and `path `configurable
-    const protocol = 'http'
-    const path = 'graphql'
-    const port = this._ctx.server.port
+  private async _registerGraphQlServer(connection: any) {
     const address = connection.remoteAddr.nodeAddress().address
-    const endpoint = `${protocol}://${address}:${port}/${path}`
+    const url = this._ctx.graphql.getUrl(address)
     try {
-      await this._ctx.graphql.register(endpoint)
-      await this._ctx.graphql.reload()
-      log(`Successfully registered GraphQL endpoint ${endpoint}`)
+      await this._ctx.graphql.register(url)
+      log(`Successfully registered GraphQL server ${url}`)
     } catch (error) {
-      log(`Failed to register GraphQL endpoint ${endpoint}:`, error)
+      log(`Failed to register GraphQL server ${url}:`, error)
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private async _deregisterGraphQlServer(connection: any) {
+    const address = connection.remoteAddr.nodeAddress().address
+    const url = this._ctx.graphql.getUrl(address)
+    try {
+      await this._ctx.graphql.deregister(url)
+      log(`Successfully deregistered GraphQL server ${url}`)
+    } catch (error) {
+      log(`Failed to deregister GraphQL server ${url}:`, error)
     }
   }
 }

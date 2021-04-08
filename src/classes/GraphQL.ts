@@ -1,5 +1,4 @@
 import fetch from 'node-fetch'
-import { Express } from 'express'
 import { ApolloServer } from 'apollo-server-express'
 import { mergeTypeDefs } from '@graphql-tools/merge'
 import { stitchSchemas } from '@graphql-tools/stitch'
@@ -10,8 +9,8 @@ import { jsonToSchema } from '@walmartlabs/json-to-simple-graphql-schema'
 
 import { DB } from './DB'
 import { Server } from './Server'
-import { toPascalCase, toCamelCase, getClassName } from '../shared'
 import { Source, Destination } from '../interfaces'
+import { toPascalCase, toCamelCase, getClassName, getRandomId } from '../shared'
 
 export type Input = {
   types: string | DocumentNode | GraphQLSchema
@@ -20,16 +19,16 @@ export type Input = {
 
 export class GraphQL implements Destination {
   private _db: DB
-  private _express: Express
+  private _server: Server
   private _apollo: ApolloServer | null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private _subschemas: any[]
+  private _subschemaMappings: { [key: string]: any }
 
   constructor(server: Server, db: DB) {
     this._db = db
-    this._express = server.express
+    this._server = server
     this._apollo = null
-    this._subschemas = []
+    this._subschemaMappings = {}
   }
 
   getInputExample(): Input {
@@ -53,7 +52,7 @@ export class GraphQL implements Destination {
       const { types, resolvers } = item
       const typeDefs = mergeTypeDefs([types])
       const schema = makeExecutableSchema({ typeDefs, resolvers })
-      this._subschemas.push({ schema })
+      this._subschemaMappings[getSubschemaMappingKey()] = { schema }
       added++
     }
     return added
@@ -90,15 +89,15 @@ export class GraphQL implements Destination {
 
     const typeDefs = mergeTypeDefs([rootType, sourceTypes])
     const schema = makeExecutableSchema({ typeDefs, resolvers })
-    this._subschemas.push({ schema })
+    this._subschemaMappings[getSubschemaMappingKey()] = { schema }
   }
 
-  async register(endpoint: string): Promise<void> {
+  async register(url: string): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async function executor(args: { [key: string]: any }) {
       const { document, variables } = args
       const query = print(document)
-      const result = await fetch(endpoint, {
+      const result = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, variables })
@@ -106,32 +105,37 @@ export class GraphQL implements Destination {
       return result.json()
     }
 
-    // IMPORTANT: This MUST be `unshift` so that local `resolvers` always
-    // have higher priority than remote `executors` with the same name!
-    this._subschemas.unshift({
+    this._subschemaMappings[url] = {
       schema: await introspectSchema(executor),
       executor
-    })
+    }
+
+    return this.reload()
+  }
+
+  async deregister(url: string): Promise<void> {
+    delete this._subschemaMappings[url]
+    return this.reload()
   }
 
   setup(): void {
     // Default to the `Input` example if no types are given
-    if (this._subschemas.length === 0) {
+    if (Object.keys(this._subschemaMappings).length === 0) {
       const { types, resolvers } = this.getInputExample()
       const typeDefs = mergeTypeDefs([types])
       const schema = makeExecutableSchema({ typeDefs, resolvers })
-      this._subschemas.push({ schema })
+      this._subschemaMappings[getSubschemaMappingKey()] = { schema }
     }
 
-    const schema = stitchSchemas({ subschemas: this._subschemas })
+    const schema = this._generateSchema()
 
     this._apollo = new ApolloServer({ schema })
-    this._apollo.applyMiddleware({ app: this._express })
+    this._apollo.applyMiddleware({ app: this._server.express })
   }
 
   // Adaption of: https://github.com/apollographql/apollo-server/issues/1275#issuecomment-532183702
   async reload(): Promise<void> {
-    const schema = stitchSchemas({ subschemas: this._subschemas })
+    const schema = this._generateSchema()
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const schemaDerivedData = await this._apollo.generateSchemaDerivedData(schema)
@@ -141,6 +145,35 @@ export class GraphQL implements Destination {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     this._apollo.schemaDerivedData = schemaDerivedData
+  }
+
+  getUrl(address: string): string {
+    // TODO: Make `port` optional
+    // TODO: Make `protocol` and `path `configurable
+    const protocol = 'http'
+    const path = 'graphql'
+    const port = this._server.port
+    return `${protocol}://${address}:${port}/${path}`
+  }
+
+  private _generateSchema(): GraphQLSchema {
+    const remoteSubschemas = []
+    const localSubschemas = []
+
+    for (const [key, value] of Object.entries(this._subschemaMappings)) {
+      if (key.startsWith('http')) {
+        remoteSubschemas.push(value)
+      } else {
+        localSubschemas.push(value)
+      }
+    }
+
+    // IMPORTANT: The order in which we spread the arrays is important given that
+    // duplicate entries at the end of the array will overwrite earlier entries
+    // during the Schema Stitchings merge operation
+    const subschemas = [...remoteSubschemas, ...localSubschemas]
+
+    return stitchSchemas({ subschemas })
   }
 }
 
@@ -222,6 +255,10 @@ function getSourceParams(source: Source): Parameter[] {
   }
 
   return result
+}
+
+function getSubschemaMappingKey(): string {
+  return `local${getRandomId()}`
 }
 
 type Parameter = {
