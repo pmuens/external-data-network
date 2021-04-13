@@ -14,20 +14,24 @@ export type Output = {
 export class EthereumEvents implements Source {
   private _url: string
   private _address: string
-  private _signature: string
+  private _signatures: string[]
   private _fromBlock: number
 
-  constructor(url: string, address: string, signature: string, fromBlock: number) {
-    signature = signature.trim()
-    if (signature.startsWith('event')) {
-      throw new Error(`The Ethereum event signature shouldn't start with "event" -> "${signature}"`)
-    } else if (signature.endsWith(';')) {
-      throw new Error(`The Ethereum event signature shouldn't end with ";" -> "${signature}"`)
+  constructor(url: string, address: string, signatures: string[], fromBlock: number) {
+    for (let signature of signatures) {
+      signature = signature.trim()
+      if (signature.startsWith('event')) {
+        throw new Error(
+          `The Ethereum event signature shouldn't start with "event" -> "${signature}"`
+        )
+      } else if (signature.endsWith(';')) {
+        throw new Error(`The Ethereum event signature shouldn't end with ";" -> "${signature}"`)
+      }
     }
 
     this._url = url
     this._address = address
-    this._signature = signature
+    this._signatures = signatures
     this._fromBlock = fromBlock
   }
 
@@ -44,14 +48,19 @@ export class EthereumEvents implements Source {
     const fromBlock = this._fromBlock
     const toBlock = 'latest'
 
-    const event = `event ${this._signature}`
-    const name = this._signature.match(/^(.+)\(/)![1]
+    const abi = this._signatures.map((signature) => `event ${signature}`)
 
     const provider = new ethers.providers.JsonRpcProvider(this._url)
-    const iface = new ethers.utils.Interface([event])
+    const iface = new ethers.utils.Interface(abi)
+
+    const topics = this._signatures.map((signature) => {
+      const name = signature.match(/^(.+)\(/)![1]
+      return iface.getEventTopic(name)
+    })
+
     const logs = await provider.getLogs({
       address: this._address,
-      topics: [iface.getEventTopic(name)],
+      topics: [topics],
       fromBlock,
       toBlock
     })
