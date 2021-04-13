@@ -48,22 +48,27 @@ export class EthereumEvents implements Source {
     const name = this._signature.match(/^(.+)\(/)![1]
 
     const provider = new ethers.providers.JsonRpcProvider(this._url)
-    const contract = new ethers.Contract(this._address, [event], provider)
-    const eventFilter = contract.filters[name]()
-    const events = await contract.queryFilter(eventFilter, fromBlock, toBlock)
+    const iface = new ethers.utils.Interface([event])
+    const logs = await provider.getLogs({
+      address: this._address,
+      topics: [iface.getEventTopic(name)],
+      fromBlock,
+      toBlock
+    })
 
     let maxBlockNumber = fromBlock
 
     const result: Output[] = []
-    for (const item of events) {
-      maxBlockNumber = Math.max(fromBlock, item.blockNumber)
-      if (item.blockNumber > fromBlock) {
-        const { address, event } = item
+    for (const log of logs) {
+      maxBlockNumber = Math.max(fromBlock, log.blockNumber)
+      if (log.blockNumber > fromBlock) {
+        const event = iface.parseLog(log)
+        const { address } = log
         result.push({
           address,
-          event: event!,
-          signature: item.eventSignature!,
-          arguments: item.args!.map((arg) => arg.toString())
+          event: event.name,
+          signature: event.signature,
+          arguments: event.args.map((arg) => arg.toString())
         })
       }
     }
