@@ -5,6 +5,11 @@ import { ethers } from 'ethers'
 import { Source } from '../host'
 
 export type Output = {
+  blockNumber: number
+  blockHash: string
+  transactionIndex: number
+  transactionHash: string
+  logIndex: number
   address: string
   event: string
   signature: string
@@ -37,6 +42,11 @@ export class EthereumEvents implements Source {
 
   getOutputExample(): Output {
     return {
+      blockNumber: 1,
+      blockHash: '0x0123456789abcdef',
+      transactionIndex: 2,
+      transactionHash: '0x0123456789abcdef',
+      logIndex: 3,
       address: '0x0123456789abcdef',
       event: 'MyEvent',
       signature: 'MyEvent(address,uint8)',
@@ -72,9 +82,13 @@ export class EthereumEvents implements Source {
       maxBlockNumber = Math.max(fromBlock, log.blockNumber)
       if (log.blockNumber > fromBlock) {
         const event = iface.parseLog(log)
-        const { address } = log
         result.push({
-          address,
+          blockNumber: log.blockNumber,
+          blockHash: log.blockHash,
+          transactionIndex: log.transactionIndex,
+          transactionHash: log.transactionHash,
+          logIndex: log.logIndex,
+          address: log.address,
           event: event.name,
           signature: event.signature,
           arguments: event.args.map((arg) => arg.toString())
