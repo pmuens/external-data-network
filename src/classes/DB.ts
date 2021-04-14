@@ -57,8 +57,14 @@ export class DB implements Source, Destination {
       SQL += ` ORDER BY json_extract(data, '$.${key}') ${sort}`
     }
 
-    SQL += ' LIMIT ?;'
-    values.push(limit)
+    if (typeof limit === 'object') {
+      SQL += ' LIMIT ? OFFSET ?;'
+      values.push(limit.limit)
+      values.push(limit.offset)
+    } else {
+      SQL += ' LIMIT ?;'
+      values.push(limit)
+    }
 
     const SELECT_SQL = this._db.prepare(SQL)
     const result = SELECT_SQL.all(values)
@@ -143,7 +149,7 @@ type ReadArguments = {
   // eslint-disable-next-line @typescript-eslint/ban-types
   klass: Object
   filters: Filters
-  limit: number
+  limit: Limit
   orderBy?: OrderBy
 }
 
@@ -153,5 +159,7 @@ type WriteArguments = {
 }
 
 type Filters = { [key: string]: string | number }
+
+type Limit = number | { limit: number; offset: number }
 
 type OrderBy = { [key: string]: 'ASC' | 'asc' | 'DESC' | 'desc' }
