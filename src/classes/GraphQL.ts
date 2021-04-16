@@ -9,6 +9,7 @@ import { jsonToSchema } from '@walmartlabs/json-to-simple-graphql-schema'
 
 import { DB } from './DB'
 import { Server } from './Server'
+import { Klass } from '../types'
 import { Source, Destination } from '../interfaces'
 import { toPascalCase, toCamelCase, getClassName, getRandomId } from '../shared'
 
@@ -177,14 +178,12 @@ export class GraphQL implements Destination {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-function getFieldName(klass: Object): string {
+function getFieldName(klass: Klass): string {
   const name = getClassName(klass)
   return toCamelCase(name)
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-function getTypeName(klass: Object): string {
+function getTypeName(klass: Klass): string {
   const name = getClassName(klass)
   return toPascalCase(name)
 }

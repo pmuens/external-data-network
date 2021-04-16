@@ -1,5 +1,8 @@
 import { DB, Server, GraphQL, Scheduler } from './classes'
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type Klass = Object
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Input = { [key: string]: any }
 

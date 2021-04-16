@@ -3,7 +3,7 @@ import Database, { Database as BetterSqlite3 } from 'better-sqlite3'
 
 import { getClassName, toSnakeCase } from '../shared'
 import { Source, Destination } from '../interfaces'
-import { Input, Output } from '../types'
+import { Klass, Input, Output } from '../types'
 
 dotenv.config()
 
@@ -139,23 +139,20 @@ function getOutputKeys(source: Source): string[] {
   return result
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-function getTableName(klass: Object): string {
+function getTableName(klass: Klass): string {
   const name = getClassName(klass)
   return toSnakeCase(name)
 }
 
 type ReadArguments = {
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  klass: Object
+  klass: Klass
   filters: Filters
   limit: Limit
   orderBy?: OrderBy
 }
 
 type WriteArguments = {
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  klass: Object
+  klass: Klass
 }
 
 type Filters = { [key: string]: string | number }

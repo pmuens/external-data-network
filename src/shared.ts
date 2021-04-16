@@ -4,7 +4,7 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { join } from 'path'
 
-import { JobConfig } from './types'
+import { Klass, JobConfig } from './types'
 
 export function loadModule<T>(name: string, args: unknown[]): T {
   const devRegistryPath = getDevRegistryPath()
@@ -26,8 +26,7 @@ export function loadJobConfigs(): JobConfig[] {
   return loadJobConfigsFromEdnDir()
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function getClassName(klass: Object): string {
+export function getClassName(klass: Klass): string {
   if (typeof klass === 'function') {
     return klass.name
   }
