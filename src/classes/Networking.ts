@@ -5,6 +5,7 @@ import { NOISE } from 'libp2p-noise'
 import TCP from 'libp2p-tcp'
 import MulticastDNS from 'libp2p-mdns'
 import Bootstrap from 'libp2p-bootstrap'
+import DHT from 'libp2p-kad-dht'
 
 import { Context } from '../types'
 
@@ -41,6 +42,9 @@ export class Networking {
         streamMuxer: [MPLEX],
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
+        dht: DHT,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         peerDiscovery: [MulticastDNS, Bootstrap]
       },
       config: {
@@ -54,6 +58,15 @@ export class Networking {
             enabled: true,
             interval: 2000,
             list: this._bootstrap_addrs
+          }
+        },
+        dht: {
+          enabled: true,
+          kBucketSize: 20,
+          randomWalk: {
+            enabled: true,
+            interval: 300e3,
+            timeout: 10e3
           }
         }
       }
